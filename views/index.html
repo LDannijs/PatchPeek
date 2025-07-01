@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>RSS Changelog</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown-light.min.css"
+    />
+  </head>
+  <body>
+    <div class="layout">
+      <div class="content">{{content}}</div>
+      <div class="sidebar">
+        <h1>RSS Changelog</h1>
+        <form method="POST" action="/update-days" style="margin-left: auto">
+          <label for="daysWindow">Show releases from last</label>
+          <input
+            type="number"
+            id="daysWindow"
+            name="daysWindow"
+            min="1"
+            value="{{daysWindow}}"
+            required
+            class="dayswindow"
+          />
+          days
+          <button type="submit">Update</button>
+        </form>
+
+        <form method="POST" action="/add-feed">
+          <label for="feedUrl">Add GitHub releases Atom feed:</label>
+          <div class="feedurl">
+            <input
+              id="feedUrl"
+              name="feedUrl"
+              type="text"
+              placeholder="https://github.com/user/repo/releases.atom"
+              required
+            />
+            <button type="submit">Add</button>
+          </div>
+        </form>
+
+        <h2>Current Feeds</h2>
+        <ul class="feedslist">
+          {{feedsList}}
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

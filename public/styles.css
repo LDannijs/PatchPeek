@@ -1,0 +1,101 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  margin: 2rem;
+  background: #f9f9f9;
+}
+.layout {
+  display: flex;
+  gap: 2rem;
+}
+.sidebar {
+  width: 25%;
+  min-width: 240px;
+}
+.content {
+  width: 75%;
+}
+details {
+  margin-bottom: 1rem;
+  background: #fff;
+  padding: 1em;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+}
+summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1.1em;
+  padding: 0.5em;
+  background: #eee;
+  border-radius: 4px;
+}
+.release {
+  margin-bottom: 1rem;
+}
+.flagged {
+  color: red;
+  font-weight: 700;
+}
+form {
+  margin-bottom: 2rem;
+}
+input[type="text"],
+input[type="number"] {
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+}
+pre {
+  background: #272822;
+  color: #f8f8f2;
+  padding: 1em;
+  overflow-x: auto;
+  border-radius: 4px;
+}
+.title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+label {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+li {
+  margin-bottom: 0.5em;
+}
+.feedslist {
+  list-style: none;
+  padding-left: 0;
+}
+
+.dayswindow {
+  width: 4em;
+  padding: 0.2rem;
+  margin: 0 0.3rem;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.feedurl {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+#feedUrl {
+  width: 75%;
+}

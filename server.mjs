@@ -8,233 +8,258 @@ import { marked } from "marked";
 const app = express();
 const port = 3000;
 
-const feedsFile = path.resolve("./feeds.json");
-const turndown = new TurndownService();
+const configFile = path.resolve("./config.json");
 const parser = new RSSParser({ customFields: { item: ["content"] } });
-
-const daysWindow = 30;
-const cutoff = Date.now() - daysWindow * 86400000;
+const turndown = new TurndownService();
 
 app.use(express.urlencoded({ extended: true }));
 
-// Helper to read feeds list
-async function readFeeds() {
+/* ---------- helpers ---------- */
+async function readConfig() {
   try {
-    const data = await fs.readFile(feedsFile, "utf-8");
-    return JSON.parse(data);
+    const raw = await fs.readFile(configFile, "utf-8");
+    return JSON.parse(raw);
   } catch {
-    return [];
+    return { feeds: [], daysWindow: 30 };
   }
 }
 
-// Helper to save feeds list
-async function saveFeeds(feeds) {
-  await fs.writeFile(feedsFile, JSON.stringify(feeds, null, 2));
+async function saveConfig(config) {
+  await fs.writeFile(configFile, JSON.stringify(config, null, 2));
 }
 
-// Helper: timestamp of an item
-function getTimestamp(item) {
-  return (
-    new Date(
-      item.isoDate ||
-        item.pubDate ||
-        item.published ||
-        item.updated ||
-        item["dc:date"] ||
-        0
-    ).getTime() || 0
-  );
-}
+const ts = (item) =>
+  new Date(
+    item.isoDate ||
+      item.pubDate ||
+      item.published ||
+      item.updated ||
+      item["dc:date"] ||
+      0
+  ).getTime() || 0;
 
-// Helper: detect breaking changes
-function hasWarning(text) {
-  const keywords = [
+const hasWarning = (md) => {
+  const kw = [
     "breaking change",
     "breaking changes",
     "caution",
     "warning",
     "important",
   ];
-  const lower = text.toLowerCase();
-  return keywords.some((k) => lower.includes(k));
-}
+  const l = md.toLowerCase();
+  return kw.some((k) => l.includes(k));
+};
 
-// GET / => show UI with feeds and releases
-app.get("/", async (req, res) => {
-  const feeds = await readFeeds();
+// neat helper to turn a GitHub releases.atom URL into user/repo
+const repoName = (url) =>
+  url.replace(/^https:\/\/github\.com\//, "").replace(/\/releases\.atom$/, "");
 
-  // Fetch release info for all feeds in parallel
+/* ---------- routes ---------- */
+app.get("/", async (_, res) => {
+  const config = await readConfig();
+  const feeds = config.feeds;
+  const daysWindow = config.daysWindow;
+  const cutoff = Date.now() - daysWindow * 86_400_000; // 86400000 ms = 1 day
+
   const feedData = await Promise.all(
     feeds.map(async (feedUrl) => {
       try {
         const feed = await parser.parseURL(feedUrl);
-        const project = feed.title.replace("Releases ·", "").trim();
-        const recentItems = feed.items.filter(
-          (item) => getTimestamp(item) >= cutoff
-        );
-        const releases = recentItems.map((item) => {
-          const date = new Date(getTimestamp(item)).toISOString().slice(0, 10);
-          const title = item.title;
-          const html = item.content || item["content:encoded"] || "";
+        const project = repoName(feedUrl); // clean name
+        const recent = feed.items.filter((i) => ts(i) >= cutoff);
+        const releases = recent.map((i) => {
+          const date = new Date(ts(i)).toISOString().slice(0, 10);
+          const html = i.content || i["content:encoded"] || "";
           const md = turndown.turndown(html).trim();
-          const flagged = hasWarning(md);
-          return { date, title, md, flagged };
+          return { title: i.title, date, md, flagged: hasWarning(md) };
         });
-        const breakingCount = releases.filter((r) => r.flagged).length;
         return {
           project,
           feedUrl,
           releases,
-          breakingCount,
           releaseCount: releases.length,
+          breakingCount: releases.filter((r) => r.flagged).length,
         };
-      } catch (e) {
+      } catch {
         return {
-          project: `Failed to load feed: ${feedUrl}`,
+          project: `Failed → ${repoName(feedUrl)}`,
           feedUrl,
           releases: [],
-          breakingCount: 0,
           releaseCount: 0,
+          breakingCount: 0,
         };
       }
     })
   );
 
-  // Render simple HTML page with form and results
-  res.send(`
-<!DOCTYPE html>
+  res.send(/* html */ `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>RSS Feed Manager & Releases</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 2rem; background: #f9f9f9; }
-  summary { cursor: pointer; font-weight: bold; font-size: 1.1em; padding: 0.5em; background: #eee; border-radius: 4px; }
-  details { margin-bottom: 1rem; background: #fff; padding: 1em; border-radius: 6px; box-shadow: 0 2px 6px rgb(0 0 0 / 0.1); }
+  .layout { display: flex; gap: 2rem; }
+  .sidebar { width: 25%; min-width: 240px; }
+  .content { width: 75%; }
+  details { margin-bottom: 1rem; background: #fff; padding: 1em; border-radius: 6px; box-shadow: 0 2px 6px rgb(0 0 0 / .1); }
+  summary { cursor: pointer; font-weight: 700; font-size: 1.1em; padding: .5em; background: #eee; border-radius: 4px; }
   .release { margin-bottom: 1rem; }
-  .flagged { color: red; font-weight: bold; }
-  pre { background: #272822; color: #f8f8f2; padding: 1em; overflow-x: auto; border-radius: 4px; }
+  .flagged { color: red; font-weight: 700; }
   form { margin-bottom: 2rem; }
-  label { display: block; margin-bottom: 0.5rem; }
-  input[type=text] { width: 80%; padding: 0.5rem; font-size: 1rem; }
-  button { padding: 0.5rem 1rem; font-size: 1rem; }
-  .error { color: red; }
+  input[type=text], input[type=number] { width: 75%; padding: .5rem; font-size: 1rem; }
+  button { padding: .5rem 1rem; font-size: 1rem; }
+  pre { background: #272822; color: #f8f8f2; padding: 1em; overflow-x: auto; border-radius: 4px; }
+  .title { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 1rem; }
+  label { display: inline-block; margin-bottom: 0.5rem; }
+  ul {list-style: none; padding-left: 0; }
+  li {margin-bottom: 0.5em: }
 </style>
 </head>
 <body>
-  <h1>RSS Feed Manager & Release Summaries (Last ${daysWindow} Days)</h1>
-  
-  <form method="POST" action="/add-feed">
-    <label for="feedUrl">Add a new GitHub releases Atom feed URL:</label>
-    <input id="feedUrl" name="feedUrl" type="text" placeholder="https://github.com/user/repo/releases.atom" required />
-    <button type="submit">Add Feed</button>
-  </form>
-
-  <h2>Current Feeds</h2>
-  <ul>
-  ${
-    feeds
-      .map(
-        (f) => `
-    <li>
-      <code>${f}</code>
-      <form method="POST" action="/remove-feed" style="display:inline; margin-left:1em;">
-        <input type="hidden" name="feedUrl" value="${f}" />
-        <button type="submit" onclick="return confirm('Remove feed?');">Remove</button>
+  <div class="layout">
+    <!-- MAIN CONTENT (left) -->
+    <div class="content">
+      ${feedData
+        .map((feed) => {
+          const breaking = feed.releases.filter((r) => r.flagged);
+          const normal = feed.releases.filter((r) => !r.flagged);
+          return `
+          <details>
+            <summary>${feed.project} — ${feed.releaseCount} releases, ${
+            feed.breakingCount
+              ? `<span class="flagged">${feed.breakingCount} with breaking changes ⚠️</span>`
+              : "no breaking changes"
+          }</summary>
+            <div>
+              ${breaking
+                .map(
+                  (r) => `
+                <details class="release" open>
+                  <summary>${r.title} (${
+                    r.date
+                  }) <span class="flagged">⚠️</span></summary>
+                  <div>${marked.parse(r.md)}</div>
+                </details>
+              `
+                )
+                .join("")}
+              ${
+                breaking.length && normal.length
+                  ? '<hr style="margin:1em 0">'
+                  : ""
+              }
+              ${normal
+                .map(
+                  (r) => `
+                <details class="release">
+                  <summary>${r.title} (${r.date})</summary>
+                  <div>${marked.parse(r.md)}</div>
+                </details>
+              `
+                )
+                .join("")}
+            </div>
+          </details>
+          `;
+        })
+        .join("")}
+    </div>
+    <div class="sidebar">
+      <h1>RSS Changelog</h1>
+      <form method="POST" action="/update-days" style="margin-left: auto;">
+        <label for="daysWindow">Show releases from last</label>
+        <input
+          type="number"
+          id="daysWindow"
+          name="daysWindow"
+          min="1"
+          value="${daysWindow}"
+          required
+          style="width: 4em; padding: 0.2rem; margin: 0 0.3rem;"
+        />
+        days
+        <button type="submit">Update</button>
       </form>
-    </li>
-  `
-      )
-      .join("") || "<li><em>No feeds added yet</em></li>"
-  }
-</ul>
 
+      <form method="POST" action="/add-feed">
+        <label for="feedUrl">Add GitHub releases Atom feed:</label>
+        <input
+          id="feedUrl"
+          name="feedUrl"
+          type="text"
+          placeholder="https://github.com/user/repo/releases.atom"
+          required
+        />
+        <button type="submit">Add</button>
+      </form>
 
-  <h2>Releases</h2>
-  ${feedData
-    .map((feed) => {
-      const breaking = feed.releases.filter((r) => r.flagged);
-      const normal = feed.releases.filter((r) => !r.flagged);
-
-      return `
-    <details>
-      <summary>${feed.project} — ${feed.releaseCount} releases, 
+      <h2>Current Feeds</h2>
+      <ul style="list-style:none;padding-left:0">
         ${
-          feed.breakingCount > 0
-            ? `<span class="flagged">${feed.breakingCount} with potential breaking changes ⚠️</span>`
-            : "No breaking changes"
-        }</summary>
-      <div>
-        ${breaking
-          .map(
-            (r) => `
-          <details class="release" open>
-            <summary>${r.title} (${
-              r.date
-            }) <span class="flagged">⚠️</span></summary>
-            <div>${marked.parse(r.md)}</div>
-          </details>
-        `
-          )
-          .join("")}
-
-        ${breaking.length && normal.length ? '<hr style="margin:1em 0" />' : ""}
-
-        ${normal
-          .map(
-            (r) => `
-          <details class="release">
-            <summary>${r.title} (${r.date})</summary>
-            <div>${marked.parse(r.md)}</div>
-          </details>
-        `
-          )
-          .join("")}
-      </div>
-    </details>
-    `;
-    })
-    .join("")}
-
+          feedData.length
+            ? feedData
+                .map(
+                  (f) => `
+          <li style="margin-bottom:.5em">
+            <form method="POST" action="/remove-feed" onchange="this.submit()" style="display:inline">
+              <label>
+                <input type="checkbox" checked />
+                ${f.project}
+              </label>
+              <input type="hidden" name="feedUrl" value="${f.feedUrl}" />
+            </form>
+          </li>`
+                )
+                .join("")
+            : "<li><em>None yet</em></li>"
+        }
+      </ul>
+    </div>
+  </div>
 </body>
-</html>
-  `);
+</html>`);
 });
 
-// POST /add-feed => add a new feed URL
+/* ---------- add & remove feeds ---------- */
 app.post("/add-feed", async (req, res) => {
-  const feedUrl = req.body.feedUrl?.trim();
-  if (!feedUrl) {
-    return res.status(400).send("Feed URL is required");
-  }
+  const url = req.body.feedUrl?.trim();
+  if (!url) return res.status(400).send("Feed URL required");
+  if (!/^https:\/\/github\.com\/[^/]+\/[^/]+\/releases\.atom$/.test(url))
+    return res.status(400).send("Invalid GitHub releases Atom URL");
 
-  const feeds = await readFeeds();
-  if (feeds.includes(feedUrl)) {
-    return res.redirect("/"); // already exists, just redirect
+  const config = await readConfig();
+  if (!config.feeds.includes(url)) {
+    config.feeds.push(url);
+    await saveConfig(config);
   }
-
-  // Basic validation for GitHub Atom feed URL pattern
-  if (!/^https:\/\/github\.com\/.+\/.+\/releases\.atom$/.test(feedUrl)) {
-    return res.status(400).send("Invalid GitHub releases Atom feed URL");
-  }
-
-  feeds.push(feedUrl);
-  await saveFeeds(feeds);
   res.redirect("/");
 });
 
-// POST /remove-feed => remove a feed URL
 app.post("/remove-feed", async (req, res) => {
-  const feedUrl = req.body.feedUrl?.trim();
-  if (!feedUrl) return res.status(400).send("Feed URL is required");
+  let urls = req.body.feedUrl;
+  if (!urls) return res.redirect("/"); // nothing sent – ignore
+  if (!Array.isArray(urls)) urls = [urls]; // normalise to array
+  const config = await readConfig();
+  config.feeds = config.feeds.filter((f) => !urls.includes(f));
+  await saveConfig(config);
 
-  let feeds = await readFeeds();
-  feeds = feeds.filter((f) => f !== feedUrl);
-  await saveFeeds(feeds);
   res.redirect("/");
 });
 
-app.listen(port, () => {
-  console.log(`🚀 Server running at http://localhost:${port}`);
+/* ---------- update days window ---------- */
+app.post("/update-days", async (req, res) => {
+  const days = parseInt(req.body.daysWindow);
+  if (!isNaN(days) && days > 0) {
+    const config = await readConfig();
+    config.daysWindow = days;
+    await saveConfig(config);
+  }
+  res.redirect("/");
 });
+
+/* ---------- start server ---------- */
+app.listen(port, () =>
+  console.log(`🚀 Server running at http://localhost:${port}`)
+);

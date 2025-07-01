@@ -37,13 +37,7 @@ const ts = (item) =>
   ).getTime() || 0;
 
 const hasWarning = (md) => {
-  const kw = [
-    "breaking change",
-    "breaking changes",
-    "caution",
-    "warning",
-    "important",
-  ];
+  const kw = ["breaking change", "breaking changes", "caution", "important"];
   const l = md.toLowerCase();
   return kw.some((k) => l.includes(k));
 };
@@ -64,7 +58,6 @@ async function renderTemplate(data) {
   return template;
 }
 
-/* ---------- routes ---------- */
 app.get("/", async (_, res) => {
   const config = await readConfig();
   const feeds = config.feeds;
@@ -102,15 +95,19 @@ app.get("/", async (_, res) => {
     })
   );
 
-  feedData.sort((a, b) => {
+  // Filter feedData only for main content — exclude feeds with no releases
+  const feedsWithReleases = feedData.filter((feed) => feed.releaseCount > 0);
+
+  // Sort feeds with releases: breakingCount desc, then releaseCount desc
+  feedsWithReleases.sort((a, b) => {
     if (b.breakingCount !== a.breakingCount) {
       return b.breakingCount - a.breakingCount;
     }
     return b.releaseCount - a.releaseCount;
   });
 
-  // Generate content html
-  const content = feedData
+  // Generate main content HTML using only feeds with releases
+  const content = feedsWithReleases
     .map((feed) => {
       const breaking = feed.releases.filter((r) => r.flagged);
       const normal = feed.releases.filter((r) => !r.flagged);
@@ -149,7 +146,7 @@ app.get("/", async (_, res) => {
     })
     .join("");
 
-  // Generate feed list for sidebar
+  // Generate sidebar feed list using all feeds (feedData)
   const feedsList = feedData.length
     ? feedData
         .map(

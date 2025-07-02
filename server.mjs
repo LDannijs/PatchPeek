@@ -114,32 +114,28 @@ app.get("/", async (_, res) => {
           <img class="avatar" src="https://github.com/${
             feed.project.split("/")[0]
           }.png" alt="${feed.project}" />
-          ${feed.project} &nbsp; &nbsp; ${feed.releaseCount} releases &nbsp;${
-        feed.breakingCount
-          ? `<span class="flagged"> ${feed.breakingCount} with breaking changes ⚠️</span>`
-          : ""
-      }
+          <p class="releaseCount">${feed.releaseCount} releases</p>
+          <p class="project">${feed.project} &nbsp; &nbsp;</p>
+          <p class="breakingCount">
+            ${
+              feed.breakingCount
+                ? `<span class="flagged"> ${feed.breakingCount} with breaking changes ⚠️</span>`
+                : ""
+            }
+          </p>
         </summary>
-        <div>
-          ${breaking
+        <div class="releaseDiv">
+          ${[...breaking, ...normal]
             .map(
               (r) => `
-            <details class="release" open>
-              <summary>${r.title} (${r.date}) <span class="flagged">⚠️</span></summary>
-              <div class="markdown-body">${r.html}</div>
-            </details>
-          `
-            )
-            .join("")}
-          ${breaking.length && normal.length ? "<hr>" : ""}
-          ${normal
-            .map(
-              (r) => `
-            <details class="release">
-              <summary>${r.title} (${r.date})</summary>
-              <div class="markdown-body">${r.html}</div>
-            </details>
-          `
+                <details class="release" open>
+                  <summary>
+                    ${r.title} (${r.date})
+                    ${r.flagged ? '<span class="flagged">⚠️</span>' : ""}
+                  </summary>
+                  <div class="markdown-body">${r.html}</div>
+                </details>
+              `
             )
             .join("")}
         </div>

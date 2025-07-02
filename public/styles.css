@@ -2,7 +2,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
     sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   margin: 2rem;
-  background: #f9f9f9;
+  background: #222222;
+  color: #ffffff;
 }
 
 html {
@@ -10,7 +11,8 @@ html {
 }
 
 h2 {
-  margin: 5px;
+  margin: 5px 0px;
+  color: #ffffff;
 }
 
 .layout {
@@ -29,45 +31,35 @@ h2 {
 
 details {
   margin-bottom: 1rem;
-  background: #fff;
-  padding: 1em;
+  background: #313131;
   border-radius: 15px;
+  color: #ffffff;
 }
 
 summary {
   cursor: pointer;
   font-weight: 700;
   font-size: 1.1em;
-  border-radius: 4px;
+  border-radius: 15px;
   list-style: none;
   position: relative;
-  padding-right: 1.5em;
-}
-/*
-summary::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  font-size: 0.9em;
-  transform: rotate(0deg);
-  transition: transform 0.2s;
+  padding: 15px;
+  color: #ffffff;
+  user-select: none;
+  -moz-user-select: none;
 }
 
-details[open] > summary::after {
-  transform: rotate(90deg);
-}
-*/
 summary::-webkit-details-marker {
-  display: none; /* hides the default arrow in Chrome/Safari */
+  display: none;
 }
 
 .release {
-  background: #fff;
+  background: #222222;
   margin-bottom: 1rem;
 }
 
 .flagged {
-  color: red;
+  color: #ff4d4d;
   font-weight: 700;
 }
 
@@ -76,14 +68,23 @@ input[type="number"] {
   padding: 0.5rem;
   font-size: 1rem;
   border-radius: 8px;
-  border: 1px solid grey;
+  border: 1px solid #555;
+  background: #2a2a2a;
+  color: #e0e0e0;
 }
 
 button {
   padding: 0.5rem 1rem;
   font-size: 1rem;
   border-radius: 8px;
-  border: 1px solid grey;
+  border: 1px solid #555;
+  background: #333;
+  color: #f0f0f0;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #444;
 }
 
 pre {
@@ -94,16 +95,10 @@ pre {
   border-radius: 4px;
 }
 
-.title {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
 label {
   display: inline-block;
   margin-bottom: 0.5rem;
+  color: #ffffff;
 }
 
 .feedslist {
@@ -134,25 +129,25 @@ input::-webkit-inner-spin-button {
   width: 75%;
 }
 
-details.wrapper {
-  background: #e7e7e7;
-}
-
 .markdown-body {
-  padding-top: 10px;
+  padding: 15px;
+  background: #222222 !important;
+  border-radius: 15px;
 }
 
 .feedMain {
-  padding: 10px;
+  padding: 20px;
   display: flex;
+  color: #ffffff;
+  align-items: center;
 }
 
 .feedMain img.avatar {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   flex-shrink: 0;
-  padding-right: 10px;
+  /* margin-right: 10px; */
 }
 
 .addfeed {
@@ -164,6 +159,7 @@ details.wrapper {
   align-items: center;
   padding: 5px 0;
   font-size: large;
+  color: #ffffff;
 }
 
 .feedcheck {
@@ -174,4 +170,26 @@ details.wrapper {
 .feedtext {
   margin: 0;
   padding-left: 5px;
+}
+
+.releaseDiv {
+  padding: 0 15px 1px;
+}
+
+.breakingCount {
+  position: absolute;
+  right: 20px;
+  margin: 0;
+}
+
+.releaseCount {
+  width: 7em;
+  display: flex;
+  justify-content: center;
+  color: #c3ceff;
+  margin: 0;
+}
+
+.project {
+  margin: 0;
 }

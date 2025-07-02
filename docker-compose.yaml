@@ -1,0 +1,8 @@
+services:
+  rss-changelog:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config.json:/app/config.json # persist config on host
+    restart: unless-stopped

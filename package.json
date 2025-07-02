@@ -1,5 +1,5 @@
 {
-  "name": "rss-test",
+  "name": "rss-changelog",
   "version": "1.0.0",
   "main": "server.mjs",
   "scripts": {

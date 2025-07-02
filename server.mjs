@@ -10,9 +10,8 @@ const configFile = path.resolve("./config.json");
 const parser = new RSSParser({ customFields: { item: ["content"] } });
 
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.resolve("./public"))); // serve css file etc.
+app.use(express.static(path.resolve("./public")));
 
-/* ---------- helpers ---------- */
 async function readConfig() {
   try {
     const raw = await fs.readFile(configFile, "utf-8");
@@ -45,12 +44,10 @@ const hasWarning = (md) => {
 const repoName = (url) =>
   url.replace(/^https:\/\/github\.com\//, "").replace(/\/releases\.atom$/, "");
 
-/* ---------- simple template function ---------- */
 async function renderTemplate(data) {
   const templatePath = path.resolve("./views/index.html");
   let template = await fs.readFile(templatePath, "utf-8");
 
-  // Replace placeholders
   template = template.replace("{{content}}", data.content);
   template = template.replace("{{daysWindow}}", data.daysWindow);
   template = template.replace("{{feedsList}}", data.feedsList);
@@ -112,12 +109,17 @@ app.get("/", async (_, res) => {
       const breaking = feed.releases.filter((r) => r.flagged);
       const normal = feed.releases.filter((r) => !r.flagged);
       return `
-      <details>
-        <summary>${feed.project} — ${feed.releaseCount} releases, ${
+      <details class="wrapper">
+        <summary class="feedMain">
+          <img class="avatar" src="https://github.com/${
+            feed.project.split("/")[0]
+          }.png" alt="${feed.project}" />
+          ${feed.project} — ${feed.releaseCount} releases, ${
         feed.breakingCount
           ? `<span class="flagged">${feed.breakingCount} with breaking changes ⚠️</span>`
           : "no breaking changes"
-      }</summary>
+      }
+        </summary>
         <div>
           ${breaking
             .map(
@@ -129,7 +131,7 @@ app.get("/", async (_, res) => {
           `
             )
             .join("")}
-          ${breaking.length && normal.length ? '<hr style="margin:1em 0">' : ""}
+          ${breaking.length && normal.length ? "<hr>" : ""}
           ${normal
             .map(
               (r) => `
@@ -146,17 +148,17 @@ app.get("/", async (_, res) => {
     })
     .join("");
 
-  // Generate sidebar feed list using all feeds (feedData)
+  // Generate sidebar feed list
   const feedsList = feedData.length
     ? feedData
         .map(
           (f) => `
-      <li style="margin-bottom:.5em">
-        <form method="POST" action="/remove-feed" onchange="this.submit()" style="display:inline">
-          <label>
+      <li>
+        <form method="POST" action="/remove-feed" onchange="this.submit()">
+          <code class="feeds">
             <input type="checkbox" checked />
             ${f.project}
-          </label>
+          </code>
           <input type="hidden" name="feedUrl" value="${f.feedUrl}" />
         </form>
       </li>`
@@ -169,7 +171,6 @@ app.get("/", async (_, res) => {
   res.send(html);
 });
 
-/* ---------- add & remove feeds ---------- */
 app.post("/add-feed", async (req, res) => {
   const url = req.body.feedUrl?.trim();
   if (!url) return res.status(400).send("Feed URL required");
@@ -195,7 +196,6 @@ app.post("/remove-feed", async (req, res) => {
   res.redirect("/");
 });
 
-/* ---------- update days window ---------- */
 app.post("/update-days", async (req, res) => {
   const days = parseInt(req.body.daysWindow);
   if (!isNaN(days) && days > 0) {
@@ -206,7 +206,6 @@ app.post("/update-days", async (req, res) => {
   res.redirect("/");
 });
 
-/* ---------- start server ---------- */
 app.listen(port, () =>
-  console.log(`🚀 Server running at http://localhost:${port}`)
+  console.log(`Server running at http://localhost:${port}`)
 );

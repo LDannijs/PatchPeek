@@ -4,6 +4,10 @@ body {
   margin: 2rem;
   background: #f9f9f9;
 }
+html {
+  overflow-y: scroll;
+}
+
 .layout {
   display: flex;
   gap: 2rem;
@@ -26,19 +30,33 @@ summary {
   cursor: pointer;
   font-weight: 700;
   font-size: 1.1em;
-  padding: 0.5em;
-  background: #eee;
   border-radius: 4px;
+  list-style: none;
+  position: relative;
+  padding-right: 1.5em;
+}
+summary::after {
+  content: "▶";
+  position: absolute;
+  right: 0;
+  font-size: 0.9em;
+  transform: rotate(0deg);
+  transition: transform 0.2s;
+}
+
+details[open] > summary::after {
+  transform: rotate(90deg); /* rotate arrow when open */
+}
+summary::-webkit-details-marker {
+  display: none; /* hides the default arrow in Chrome/Safari */
 }
 .release {
+  background: #fff;
   margin-bottom: 1rem;
 }
 .flagged {
   color: red;
   font-weight: 700;
-}
-form {
-  margin-bottom: 2rem;
 }
 input[type="text"],
 input[type="number"] {
@@ -65,10 +83,6 @@ pre {
 label {
   display: inline-block;
   margin-bottom: 0.5rem;
-}
-ul {
-  list-style: none;
-  padding-left: 0;
 }
 li {
   margin-bottom: 0.5em;
@@ -98,4 +112,36 @@ input::-webkit-inner-spin-button {
 
 #feedUrl {
   width: 75%;
+}
+
+details.wrapper {
+  background: #eee;
+}
+
+.markdown-body {
+  padding-top: 10px;
+}
+
+.feedMain {
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+}
+
+.feedMain img.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.addfeed {
+  padding: 2em 0;
+}
+
+.feeds {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
 }

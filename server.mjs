@@ -114,10 +114,10 @@ app.get("/", async (_, res) => {
           <img class="avatar" src="https://github.com/${
             feed.project.split("/")[0]
           }.png" alt="${feed.project}" />
-          ${feed.project} — ${feed.releaseCount} releases, ${
+          ${feed.project} &nbsp; &nbsp; ${feed.releaseCount} releases &nbsp;${
         feed.breakingCount
-          ? `<span class="flagged">${feed.breakingCount} with breaking changes ⚠️</span>`
-          : "no breaking changes"
+          ? `<span class="flagged"> ${feed.breakingCount} with breaking changes ⚠️</span>`
+          : ""
       }
         </summary>
         <div>
@@ -156,8 +156,8 @@ app.get("/", async (_, res) => {
       <li>
         <form method="POST" action="/remove-feed" onchange="this.submit()">
           <code class="feeds">
-            <input type="checkbox" checked />
-            ${f.project}
+            <input type="checkbox" class="feedcheck" checked />
+            <p class="feedtext">${f.project}</p>
           </code>
           <input type="hidden" name="feedUrl" value="${f.feedUrl}" />
         </form>

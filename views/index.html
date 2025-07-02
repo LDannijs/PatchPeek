@@ -25,9 +25,9 @@
             value="{{daysWindow}}"
             required
             class="dayswindow"
+            onchange="this.form.submit()"
           />
           days
-          <button type="submit">Update</button>
         </form>
 
         <form method="POST" action="/add-feed" class="addfeed">

@@ -1,10 +1,10 @@
 # RSS Github Release Notifier
 
-Basically, add rss feeds and it will check for any potential breaking changes.
+Basically, add rss feeds and it will check for any potential breaking changes. Mostly useful for checking for docker container updates before breaking something.
 
-## Potential features
+## Screenshot
 
-- auto-check the docker containers i am running and apply them to the list
+![](screenshot.png)
 
 ## Running
 

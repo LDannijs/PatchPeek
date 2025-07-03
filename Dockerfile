@@ -4,6 +4,8 @@ FROM node:20
 # Create app directory
 WORKDIR /app
 
+COPY public ./public
+
 # Copy package files and install deps
 COPY package*.json ./
 RUN npm install

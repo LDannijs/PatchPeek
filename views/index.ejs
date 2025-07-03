@@ -15,11 +15,11 @@
       <div class="content">
         <% if (rateLimitHit && isAuthenticated) { %>
         <p class="rateLimitBanner">
-          ⚠️ GitHub API rate limit exceeded for authenticated requests.
+          🚨 GitHub API rate limit exceeded for authenticated requests.
         </p>
         <% } else if (rateLimitHit && !isAuthenticated) { %>
         <p class="rateLimitBanner">
-          ⚠️ GitHub API rate limit exceeded for unauthenticated requests. Please add a GitHub token to increase your quota.
+          🚨 GitHub API rate limit exceeded for unauthenticated requests. Please add a GitHub token to increase your quota.
         </p>
         <% } %>
 
@@ -29,7 +29,7 @@
               <img class="avatar" src="https://github.com/<%= feed.project.split('/')[0] %>.png" alt="<%= feed.project %>" />
               <p class="project"><%= feed.project %></p>
               <p class="releaseCount <%= feed.breakingCount ? 'flagged' : '' %>">
-                <%= feed.releaseCount %> releases<%= feed.breakingCount ? ' ⚠️' : '' %>
+                <%= feed.releaseCount %> releases<%= feed.breakingCount ? ' 🚨' : '' %>
               </p>
             </summary>
             <div class="releaseDiv">
@@ -41,7 +41,7 @@
                 <details class="release" open>
                   <summary>
                     <%= r.title %> (<%= r.date %>)
-                    <% if (r.flagged) { %><span class="flagged">⚠️</span><% } %>
+                    <% if (r.flagged) { %><span class="flagged">🚨</span><% } %>
                   </summary>
                   <div class="markdown-body"><%- r.html %></div>
                 </details>
@@ -78,7 +78,6 @@
               placeholder="user/repo"
               required
             />
-            <button type="submit">Add</button>
           </div>
         </form>
 

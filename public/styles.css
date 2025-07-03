@@ -191,4 +191,5 @@ input::-webkit-inner-spin-button {
 
 .project {
   margin: 0;
+  line-break: anywhere;
 }

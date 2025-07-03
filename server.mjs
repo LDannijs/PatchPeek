@@ -5,17 +5,14 @@ import "dotenv/config";
 
 const app = express();
 const port = 3000;
-
-app.set("view engine", "ejs");
-app.set("views", path.resolve("./views")); // make sure this folder exists
-
 const configFile = path.resolve("./config.json");
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
+app.set("view engine", "ejs");
+app.set("views", path.resolve("./views"));
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.resolve("./public")));
-
-// ----------- Helpers --------------------------------------------------------
 
 async function readConfig() {
   try {
@@ -31,8 +28,6 @@ async function saveConfig(config) {
   await fs.writeFile(configFile, JSON.stringify(config, null, 2));
 }
 
-const toTimestamp = (iso) => new Date(iso ?? 0).getTime() || 0;
-
 const hasWarning = (text = "") => {
   const keywords = [
     "breaking change",
@@ -44,7 +39,6 @@ const hasWarning = (text = "") => {
   return keywords.some((kw) => lower.includes(kw));
 };
 
-// Fetch up to 100 releases from a GitHub repo
 async function fetchReleases(repo) {
   const url = `https://api.github.com/repos/${repo}/releases?per_page=100`;
   const headers = GITHUB_TOKEN
@@ -87,30 +81,9 @@ async function renderMarkdownWithGitHubAPI(md, repo) {
   return res.text();
 }
 
-// Render main HTML template with injected content
-async function renderTemplate({ content, daysWindow, feedsList }) {
-  const tpl = await fs.readFile(path.resolve("./views/index.html"), "utf-8");
-  return tpl
-    .replace("{{content}}", content)
-    .replace("{{daysWindow}}", daysWindow)
-    .replace("{{feedsList}}", feedsList);
-}
-
-// ----------- Routes ---------------------------------------------------------
-
 app.get("/", async (_, res) => {
   const { feeds, daysWindow } = await readConfig();
   const cutoff = Date.now() - daysWindow * 86400000;
-
-  if (!process.env.GITHUB_TOKEN) {
-    return res.render("index", {
-      tokenMissing: true,
-      feedsList: feeds,
-      feedsWithReleases: [],
-      rateLimitHit: false,
-      daysWindow,
-    });
-  }
 
   let rateLimitHit = false;
   let rateLimitReset = 0;
@@ -120,7 +93,10 @@ app.get("/", async (_, res) => {
       try {
         const items = await fetchReleases(repo);
         const recent = items.filter(
-          (r) => !r.draft && new Date(r.published_at).getTime() >= cutoff
+          (r) =>
+            !r.draft &&
+            !r.prerelease &&
+            new Date(r.published_at).getTime() >= cutoff
         );
         const releases = await Promise.all(
           recent.map(async (r) => ({
@@ -154,16 +130,16 @@ app.get("/", async (_, res) => {
 
   const feedsWithReleases = feedData.filter((f) => f.releaseCount > 0);
   feedsWithReleases.sort((a, b) =>
-    b.breakingCount !== a.breakingCount
-      ? b.breakingCount - a.breakingCount
-      : b.releaseCount - a.releaseCount
+    b.breakingCount === a.breakingCount
+      ? b.releaseCount - a.releaseCount
+      : b.breakingCount - a.breakingCount
   );
 
   res.render("index", {
-    tokenMissing: false,
+    rateLimitHit,
+    isAuthenticated: !!GITHUB_TOKEN,
     feedsList: feeds,
     feedsWithReleases,
-    rateLimitHit,
     daysWindow,
   });
 });

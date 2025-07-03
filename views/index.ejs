@@ -13,14 +13,14 @@
   <body>
     <div class="layout">
       <div class="content">
-        <% if (tokenMissing) { %>
-          <p class="tokenMissingBanner">
-            ⚠️ GitHub token missing! Please set your GITHUB_TOKEN environment variable to enable API requests.
-          </p>
-        <% } %>
-
-        <% if (rateLimitHit) { %>
-          <p class="rateLimitBanner">⚠️ GitHub API rate limit exceeded.</p>
+        <% if (rateLimitHit && isAuthenticated) { %>
+        <p class="rateLimitBanner">
+          ⚠️ GitHub API rate limit exceeded for authenticated requests.
+        </p>
+        <% } else if (rateLimitHit && !isAuthenticated) { %>
+        <p class="rateLimitBanner">
+          ⚠️ GitHub API rate limit exceeded for unauthenticated requests. Please add a GitHub token to increase your quota.
+        </p>
         <% } %>
 
         <% feedsWithReleases.forEach(feed => { %>

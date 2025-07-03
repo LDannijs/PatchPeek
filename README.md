@@ -13,7 +13,15 @@ Fetches Github Releases changelog with API and it will check for any potential b
 
 ## Running
 
-To run, clone and run
+Clone the repo
+
+Create a `.env` file with
+
+```
+GITHUB_TOKEN=YOUR_TOKEN_HERE
+```
+
+Then run
 
 ```
 npm start

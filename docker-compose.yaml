@@ -1,5 +1,5 @@
 services:
-  PatchPeek:
+  patchpeek:
     build: .
     ports:
       - "3321:3000"

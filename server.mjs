@@ -6,6 +6,9 @@ import "dotenv/config";
 const app = express();
 const port = 3000;
 
+app.set("view engine", "ejs");
+app.set("views", path.resolve("./views")); // make sure this folder exists
+
 const configFile = path.resolve("./config.json");
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
@@ -97,35 +100,28 @@ async function renderTemplate({ content, daysWindow, feedsList }) {
 
 app.get("/", async (_, res) => {
   const { feeds, daysWindow } = await readConfig();
-  const cutoff = Date.now() - daysWindow * 86_400_000;
+  const cutoff = Date.now() - daysWindow * 86400000;
+
+  if (!process.env.GITHUB_TOKEN) {
+    return res.render("index", {
+      tokenMissing: true,
+      feedsList: feeds,
+      feedsWithReleases: [],
+      rateLimitHit: false,
+      daysWindow,
+    });
+  }
 
   let rateLimitHit = false;
   let rateLimitReset = 0;
-
-  if (!GITHUB_TOKEN) {
-    const banner = `<p class="tokenMissingBanner">
-      ⚠️ GitHub token missing! Please set your GITHUB_TOKEN environment variable to enable API requests.
-    </p>`;
-    const feedsList = feeds.length
-      ? feeds.map((f) => `<li><code class="feeds">${f}</code></li>`).join("")
-      : "<li><em>None yet</em></li>";
-    return res.send(
-      await renderTemplate({
-        content: banner,
-        daysWindow,
-        feedsList,
-      })
-    );
-  }
 
   const feedData = await Promise.all(
     feeds.map(async (repo) => {
       try {
         const items = await fetchReleases(repo);
         const recent = items.filter(
-          (r) => !r.draft && toTimestamp(r.published_at) >= cutoff
+          (r) => !r.draft && new Date(r.published_at).getTime() >= cutoff
         );
-
         const releases = await Promise.all(
           recent.map(async (r) => ({
             title: r.name || r.tag_name,
@@ -163,68 +159,13 @@ app.get("/", async (_, res) => {
       : b.releaseCount - a.releaseCount
   );
 
-  const content = feedsWithReleases
-    .map(({ project, releases, releaseCount, breakingCount }) => {
-      const breaking = releases.filter((r) => r.flagged);
-      const normal = releases.filter((r) => !r.flagged);
-      return `
-        <details class="wrapper">
-          <summary class="feedMain">
-            <img class="avatar" src="https://github.com/${
-              project.split("/")[0]
-            }.png" alt="${project}" />
-            <p class="project">${project}</p>
-            <p class="releaseCount ${breakingCount ? "flagged" : ""}">
-              ${releaseCount} releases${breakingCount ? " ⚠️" : ""}
-            </p>
-          </summary>
-          <div class="releaseDiv">
-            ${[...breaking, ...normal]
-              .map(
-                ({ title, date, html, flagged }) => `
-                  <details class="release" open>
-                    <summary>
-                      ${title} (${date})${
-                  flagged ? '<span class="flagged">⚠️</span>' : ""
-                }
-                    </summary>
-                    <div class="markdown-body">${html}</div>
-                  </details>`
-              )
-              .join("")}
-          </div>
-        </details>`;
-    })
-    .join("");
-
-  const banner = rateLimitHit
-    ? `<p class="rateLimitBanner">⚠️ GitHub API rate limit exceeded.</p>`
-    : "";
-
-  const feedsList = feedData.length
-    ? feedData
-        .map(
-          ({ project }) => `
-      <li>
-        <form method="POST" action="/remove-feed" onchange="this.submit()">
-          <code class="feeds">
-            <input type="checkbox" class="feedcheck" checked />
-            <p class="feedtext">${project}</p>
-          </code>
-          <input type="hidden" name="feedUrl" value="${project}" />
-        </form>
-      </li>`
-        )
-        .join("")
-    : "<li><em>None yet</em></li>";
-
-  res.send(
-    await renderTemplate({
-      content: banner + content,
-      daysWindow,
-      feedsList,
-    })
-  );
+  res.render("index", {
+    tokenMissing: false,
+    feedsList: feeds,
+    feedsWithReleases,
+    rateLimitHit,
+    daysWindow,
+  });
 });
 
 app.post("/add-feed", async (req, res) => {

@@ -114,14 +114,10 @@ app.get("/", async (_, res) => {
           <img class="avatar" src="https://github.com/${
             feed.project.split("/")[0]
           }.png" alt="${feed.project}" />
-          <p class="releaseCount">${feed.releaseCount} releases</p>
-          <p class="project">${feed.project} &nbsp; &nbsp;</p>
-          <p class="breakingCount">
-            ${
-              feed.breakingCount
-                ? `<span class="flagged"> ${feed.breakingCount} with breaking changes ⚠️</span>`
-                : ""
-            }
+          <p class="project">${feed.project}</p>
+          <p class="releaseCount ${feed.breakingCount ? "flagged" : ""}">
+            ${feed.releaseCount} releases
+            ${feed.breakingCount ? " ⚠️" : ""}
           </p>
         </summary>
         <div class="releaseDiv">

@@ -17,16 +17,18 @@ h2 {
 
 .layout {
   display: flex;
+  flex-wrap: wrap;
   gap: 2rem;
 }
 
 .sidebar {
-  width: 25%;
-  min-width: 240px;
+  flex: 1;
+  min-width: 250px;
 }
 
 .content {
-  width: 75%;
+  flex: 4;
+  min-width: 350px;
 }
 
 details {
@@ -59,7 +61,7 @@ summary::-webkit-details-marker {
 }
 
 .flagged {
-  color: #ff4d4d;
+  color: #ff4d4d !important;
   font-weight: 700;
 }
 
@@ -136,10 +138,11 @@ input::-webkit-inner-spin-button {
 }
 
 .feedMain {
-  padding: 20px;
   display: flex;
-  color: #ffffff;
+  flex-wrap: wrap;
   align-items: center;
+  width: 100%;
+  gap: 15px;
 }
 
 .feedMain img.avatar {
@@ -147,7 +150,6 @@ input::-webkit-inner-spin-button {
   height: 30px;
   border-radius: 50%;
   flex-shrink: 0;
-  /* margin-right: 10px; */
 }
 
 .addfeed {
@@ -176,18 +178,15 @@ input::-webkit-inner-spin-button {
   padding: 0 15px 1px;
 }
 
-.breakingCount {
-  position: absolute;
-  right: 20px;
-  margin: 0;
-}
-
 .releaseCount {
   width: 7em;
   display: flex;
-  justify-content: center;
   color: #c3ceff;
-  margin: 0;
+  margin-left: auto;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-right: 25px;
+  justify-content: center;
 }
 
 .project {

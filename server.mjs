@@ -1,13 +1,15 @@
 import express from "express";
 import fs from "fs/promises";
 import path from "path";
-import RSSParser from "rss-parser";
+import "dotenv/config";
 
 const app = express();
 const port = 3000;
-
 const configFile = path.resolve("./config.json");
-const parser = new RSSParser({ customFields: { item: ["content"] } });
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+
+app.set("view engine", "ejs");
+app.set("views", path.resolve("./views"));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.resolve("./public")));
@@ -17,6 +19,7 @@ async function readConfig() {
     const raw = await fs.readFile(configFile, "utf-8");
     return JSON.parse(raw);
   } catch {
+    // Default config if file missing or invalid
     return { feeds: [], daysWindow: 30 };
   }
 }
@@ -25,65 +28,98 @@ async function saveConfig(config) {
   await fs.writeFile(configFile, JSON.stringify(config, null, 2));
 }
 
-const ts = (item) =>
-  new Date(
-    item.isoDate ||
-      item.pubDate ||
-      item.published ||
-      item.updated ||
-      item["dc:date"] ||
-      0
-  ).getTime() || 0;
-
-const hasWarning = (md) => {
-  const kw = ["breaking change", "breaking changes", "caution", "important"];
-  const l = md.toLowerCase();
-  return kw.some((k) => l.includes(k));
+const hasWarning = (text = "") => {
+  const keywords = [
+    "breaking change",
+    "breaking changes",
+    "caution",
+    "important",
+  ];
+  const lower = text.toLowerCase();
+  return keywords.some((kw) => lower.includes(kw));
 };
 
-const repoName = (url) =>
-  url.replace(/^https:\/\/github\.com\//, "").replace(/\/releases\.atom$/, "");
+async function fetchReleases(repo) {
+  const url = `https://api.github.com/repos/${repo}/releases?per_page=100`;
+  const headers = GITHUB_TOKEN
+    ? { Authorization: `Bearer ${GITHUB_TOKEN}` }
+    : {};
+  const res = await fetch(url, { headers });
 
-async function renderTemplate(data) {
-  const templatePath = path.resolve("./views/index.html");
-  let template = await fs.readFile(templatePath, "utf-8");
+  if (res.status === 403 && res.headers.get("x-ratelimit-remaining") === "0") {
+    const resetEpoch = Number(res.headers.get("x-ratelimit-reset") ?? 0) * 1000;
+    const err = new Error("rateLimited");
+    err.rateLimited = true;
+    err.resetEpoch = resetEpoch;
+    throw err;
+  }
 
-  template = template.replace("{{content}}", data.content);
-  template = template.replace("{{daysWindow}}", data.daysWindow);
-  template = template.replace("{{feedsList}}", data.feedsList);
+  if (!res.ok) throw new Error(`${res.status} fetching ${url}`);
+  return res.json();
+}
 
-  return template;
+// Render markdown to GitHub-flavored HTML via GitHub API
+async function renderMarkdownWithGitHubAPI(md, repo) {
+  if (!md) return "";
+  const res = await fetch("https://api.github.com/markdown", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}` } : {}),
+    },
+    body: JSON.stringify({ text: md, mode: "gfm", context: repo }),
+  });
+
+  if (!res.ok) {
+    console.error(`GitHub markdown API error: ${res.status}`);
+    // Return escaped raw markdown as fallback
+    return `<pre>${md
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")}</pre>`;
+  }
+  return res.text();
 }
 
 app.get("/", async (_, res) => {
-  const config = await readConfig();
-  const feeds = config.feeds;
-  const daysWindow = config.daysWindow;
-  const cutoff = Date.now() - daysWindow * 86_400_000; // 86400000 ms = 1 day
+  const { feeds, daysWindow } = await readConfig();
+  const cutoff = Date.now() - daysWindow * 86400000;
+
+  let rateLimitHit = false;
+  let rateLimitReset = 0;
 
   const feedData = await Promise.all(
-    feeds.map(async (feedUrl) => {
+    feeds.map(async (repo) => {
       try {
-        const feed = await parser.parseURL(feedUrl);
-        const project = repoName(feedUrl);
-        const recent = feed.items.filter((i) => ts(i) >= cutoff);
-        const releases = recent.map((i) => {
-          const date = new Date(ts(i)).toISOString().slice(0, 10);
-          const html = i.content || i["content:encoded"] || "";
-          const flagged = hasWarning(html);
-          return { title: i.title, date, html, flagged };
-        });
+        const items = await fetchReleases(repo);
+        const recent = items.filter(
+          (r) =>
+            !r.draft &&
+            !r.prerelease &&
+            new Date(r.published_at).getTime() >= cutoff
+        );
+        const releases = await Promise.all(
+          recent.map(async (r) => ({
+            title: r.name || r.tag_name,
+            date: r.published_at.slice(0, 10),
+            html: await renderMarkdownWithGitHubAPI(r.body ?? "", repo),
+            flagged: hasWarning(r.body),
+          }))
+        );
+
         return {
-          project,
-          feedUrl,
+          project: repo,
           releases,
           releaseCount: releases.length,
           breakingCount: releases.filter((r) => r.flagged).length,
         };
-      } catch {
+      } catch (e) {
+        if (e.rateLimited) {
+          rateLimitHit = true;
+          rateLimitReset = Math.max(rateLimitReset, e.resetEpoch);
+        }
         return {
-          project: `Failed → ${repoName(feedUrl)}`,
-          feedUrl,
+          project: `Failed → ${repo}`,
           releases: [],
           releaseCount: 0,
           breakingCount: 0,
@@ -92,104 +128,54 @@ app.get("/", async (_, res) => {
     })
   );
 
-  // Filter feedData only for main content — exclude feeds with no releases
-  const feedsWithReleases = feedData.filter((feed) => feed.releaseCount > 0);
+  const feedsWithReleases = feedData.filter((f) => f.releaseCount > 0);
+  feedsWithReleases.sort((a, b) =>
+    b.breakingCount === a.breakingCount
+      ? b.releaseCount - a.releaseCount
+      : b.breakingCount - a.breakingCount
+  );
 
-  // Sort feeds with releases: breakingCount desc, then releaseCount desc
-  feedsWithReleases.sort((a, b) => {
-    if (b.breakingCount !== a.breakingCount) {
-      return b.breakingCount - a.breakingCount;
-    }
-    return b.releaseCount - a.releaseCount;
+  res.render("index", {
+    rateLimitHit,
+    isAuthenticated: !!GITHUB_TOKEN,
+    feedsList: feeds,
+    feedsWithReleases,
+    daysWindow,
   });
-
-  // Generate main content HTML using only feeds with releases
-  const content = feedsWithReleases
-    .map((feed) => {
-      const breaking = feed.releases.filter((r) => r.flagged);
-      const normal = feed.releases.filter((r) => !r.flagged);
-      return `
-      <details class="wrapper">
-        <summary class="feedMain">
-          <img class="avatar" src="https://github.com/${
-            feed.project.split("/")[0]
-          }.png" alt="${feed.project}" />
-          <p class="project">${feed.project}</p>
-          <p class="releaseCount ${feed.breakingCount ? "flagged" : ""}">
-            ${feed.releaseCount} releases
-            ${feed.breakingCount ? " ⚠️" : ""}
-          </p>
-        </summary>
-        <div class="releaseDiv">
-          ${[...breaking, ...normal]
-            .map(
-              (r) => `
-                <details class="release" open>
-                  <summary>
-                    ${r.title} (${r.date})
-                    ${r.flagged ? '<span class="flagged">⚠️</span>' : ""}
-                  </summary>
-                  <div class="markdown-body">${r.html}</div>
-                </details>
-              `
-            )
-            .join("")}
-        </div>
-      </details>
-      `;
-    })
-    .join("");
-
-  // Generate sidebar feed list
-  const feedsList = feedData.length
-    ? feedData
-        .map(
-          (f) => `
-      <li>
-        <form method="POST" action="/remove-feed" onchange="this.submit()">
-          <code class="feeds">
-            <input type="checkbox" class="feedcheck" checked />
-            <p class="feedtext">${f.project}</p>
-          </code>
-          <input type="hidden" name="feedUrl" value="${f.feedUrl}" />
-        </form>
-      </li>`
-        )
-        .join("")
-    : "<li><em>None yet</em></li>";
-
-  const html = await renderTemplate({ content, daysWindow, feedsList });
-
-  res.send(html);
 });
 
 app.post("/add-feed", async (req, res) => {
-  const url = req.body.feedUrl?.trim();
-  if (!url) return res.status(400).send("Feed URL required");
-  if (!/^https:\/\/github\.com\/[^/]+\/[^/]+\/releases\.atom$/.test(url))
-    return res.status(400).send("Invalid GitHub releases Atom URL");
+  const raw = req.body.feedUrl?.trim();
+  if (!raw) return res.status(400).send("Repository required");
 
+  const match = raw.match(
+    /^(?:https:\/\/github\.com\/)?([^/]+\/[^/]+?)(?:\.git|\/.*)?$/
+  );
+  if (!match) return res.status(400).send("Invalid GitHub repository");
+
+  const repo = match[1];
   const config = await readConfig();
-  if (!config.feeds.includes(url)) {
-    config.feeds.push(url);
+
+  if (!config.feeds.includes(repo)) {
+    config.feeds.push(repo);
     await saveConfig(config);
   }
   res.redirect("/");
 });
 
 app.post("/remove-feed", async (req, res) => {
-  let urls = req.body.feedUrl;
-  if (!urls) return res.redirect("/"); // nothing sent – ignore
-  if (!Array.isArray(urls)) urls = [urls]; // normalise to array
-  const config = await readConfig();
-  config.feeds = config.feeds.filter((f) => !urls.includes(f));
-  await saveConfig(config);
+  let repos = req.body.feedUrl;
+  if (!repos) return res.redirect("/");
+  if (!Array.isArray(repos)) repos = [repos];
 
+  const config = await readConfig();
+  config.feeds = config.feeds.filter((f) => !repos.includes(f));
+  await saveConfig(config);
   res.redirect("/");
 });
 
 app.post("/update-days", async (req, res) => {
-  const days = parseInt(req.body.daysWindow);
+  const days = parseInt(req.body.daysWindow, 10);
   if (!isNaN(days) && days > 0) {
     const config = await readConfig();
     config.daysWindow = days;

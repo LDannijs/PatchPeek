@@ -128,7 +128,7 @@ input::-webkit-inner-spin-button {
 }
 
 #feedUrl {
-  width: 75%;
+  width: 65%;
 }
 
 .markdown-body {
@@ -192,4 +192,26 @@ input::-webkit-inner-spin-button {
 .project {
   margin: 0;
   line-break: anywhere;
+}
+
+.rateLimitBanner {
+  background: #fff3d1;
+  padding: 0.5rem 1rem;
+  border: 2px solid #f1c40f;
+  border-radius: 6px;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: black;
+}
+
+.tokenMissingBanner {
+  background-color: #ffdddd;
+  color: #a00;
+  padding: 1rem;
+  border: 2px solid #a00;
+  border-radius: 6px;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: black;
 }

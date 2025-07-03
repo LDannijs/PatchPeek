@@ -1,10 +1,11 @@
 # RSS Changelog
 
-Basically, add rss feeds and it will check for any potential breaking changes. Mostly useful for checking for docker container updates before breaking something.
+Fetches Github Releases changelog with API and it will check for any potential breaking changes. Mostly useful for checking for docker container updates before breaking something.
 
 ## Future additions:
 
-- Use Github API to filter out pre-releases?
+- Add caching?
+- put github token in config when building app
 
 ## Screenshot
 

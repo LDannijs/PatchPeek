@@ -190,15 +190,3 @@ input::-webkit-inner-spin-button {
   margin-bottom: 1rem;
   color: black;
 }
-
-.tokenMissingBanner {
-  background-color: #ffdddd;
-  color: #a00;
-  padding: 1rem;
-  border: 2px solid #a00;
-  border-radius: 6px;
-  font-weight: bold;
-  margin-bottom: 1rem;
-  text-align: center;
-  color: black;
-}

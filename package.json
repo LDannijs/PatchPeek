@@ -1,5 +1,5 @@
 {
-  "name": "rss-changelog",
+  "name": "patchpeek",
   "version": "1.1.0",
   "main": "server.mjs",
   "scripts": {

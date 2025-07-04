@@ -1,3 +1,7 @@
+html {
+  overflow-y: scroll;
+}
+
 body {
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif,
@@ -7,24 +11,10 @@ body {
   color: #ffffff;
 }
 
-html {
-  overflow-y: scroll;
-}
-
-h2 {
-  margin: 5px 0px;
-  color: #ffffff;
-}
-
 .layout {
   display: flex;
   flex-wrap: wrap;
   gap: 2rem;
-}
-
-.sidebar {
-  flex: 1;
-  min-width: 250px;
 }
 
 .content {
@@ -32,6 +22,23 @@ h2 {
   min-width: 350px;
 }
 
+.sidebar {
+  flex: 1;
+  min-width: 250px;
+}
+
+/* === RATE LIMIT WARNING === */
+.rateLimitBanner {
+  background: #fff3d1;
+  padding: 0.5rem 1rem;
+  border: 2px solid #f1c40f;
+  border-radius: 6px;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: black;
+}
+
+/* === CONTENT SECTION === */
 details {
   margin-bottom: 1rem;
   background: #313131;
@@ -40,6 +47,11 @@ details {
 }
 
 summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+  gap: 15px;
   cursor: pointer;
   font-weight: 700;
   font-size: 1.1em;
@@ -56,14 +68,62 @@ summary::-webkit-details-marker {
   display: none;
 }
 
-.release {
-  background: #222222;
-  margin-bottom: 1rem;
+.feedMain img.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.project {
+  margin: 0;
+  line-break: anywhere;
+}
+
+.releaseCount {
+  width: 7em;
+  display: flex;
+  color: #c3ceff;
+  margin-left: auto;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-right: 25px;
+  justify-content: center;
 }
 
 .flagged {
   color: #ff4d4d !important;
   font-weight: 700;
+}
+
+.releaseDiv {
+  padding: 0 15px 1px;
+}
+
+details.release {
+  background: #222222;
+  margin-bottom: 1rem;
+}
+
+.markdown-body {
+  padding: 15px;
+  background: #222222 !important;
+  border-radius: 15px;
+}
+
+/* === SIDEBAR SECTION === */
+.addfeed {
+  padding: 1.5em 0;
+}
+
+.updatetoken {
+  padding-bottom: 1.5em;
+}
+
+label {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  color: #ffffff;
 }
 
 input[type="text"],
@@ -76,24 +136,9 @@ input[type="number"] {
   color: #e0e0e0;
 }
 
-pre {
-  background: #272822;
-  color: #f8f8f2;
-  padding: 1em;
-  overflow-x: auto;
-  border-radius: 4px;
-}
-
-label {
-  display: inline-block;
-  margin-bottom: 0.5rem;
-  color: #ffffff;
-}
-
-.feedslist {
-  list-style: none;
-  padding-left: 0;
-  margin: 0;
+#feedSlug,
+#githubToken {
+  width: 85%;
 }
 
 .dayswindow {
@@ -108,40 +153,15 @@ input::-webkit-inner-spin-button {
   margin: 0;
 }
 
-.feedSlug {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
+h2 {
+  margin: 5px 0px;
+  color: #ffffff;
 }
 
-#feedSlug,
-#githubToken {
-  width: 85%;
-}
-
-.markdown-body {
-  padding: 15px;
-  background: #222222 !important;
-  border-radius: 15px;
-}
-
-.feedMain {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  width: 100%;
-  gap: 15px;
-}
-
-.feedMain img.avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.addfeed {
-  padding: 1.5em 0;
+.feedslist {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
 }
 
 .feeds {
@@ -160,38 +180,4 @@ input::-webkit-inner-spin-button {
 .feedtext {
   margin: 0;
   padding-left: 5px;
-}
-
-.releaseDiv {
-  padding: 0 15px 1px;
-}
-
-.releaseCount {
-  width: 7em;
-  display: flex;
-  color: #c3ceff;
-  margin-left: auto;
-  margin-top: 0;
-  margin-bottom: 0;
-  padding-right: 25px;
-  justify-content: center;
-}
-
-.project {
-  margin: 0;
-  line-break: anywhere;
-}
-
-.rateLimitBanner {
-  background: #fff3d1;
-  padding: 0.5rem 1rem;
-  border: 2px solid #f1c40f;
-  border-radius: 6px;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: black;
-}
-
-.updatetoken {
-  padding-bottom: 1.5em;
 }

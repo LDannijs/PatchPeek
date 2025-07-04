@@ -4,6 +4,5 @@ services:
     ports:
       - "3321:3000"
     volumes:
-      - ./config.json:/app/config.json # persist config on host
-      - ./.env:/app/.env
+      - ./config.json:/app/config.json
     restart: unless-stopped

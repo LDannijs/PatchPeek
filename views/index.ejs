@@ -55,7 +55,7 @@
         <h1>👀 PatchPeek</h1>
 
         <form method="POST" action="/update-days" style="margin-left: auto">
-          <label for="daysWindow">Show releases from last</label>
+          <label for="daysWindow">Show releases from the last</label>
           <input
             type="number"
             id="daysWindow"
@@ -70,15 +70,22 @@
         </form>
 
         <form method="POST" action="/add-feed" class="addfeed">
-          <label for="feedUrl">Add GitHub release:</label>
-          <div class="feedurl">
+          <label for="feedSlug">Add GitHub release:</label>
+          <div class="feedSlug">
             <input
-              id="feedUrl"
-              name="feedUrl"
+              id="feedSlug"
+              name="feedSlug"
               type="text"
               placeholder="user/repo"
               required
             />
+          </div>
+        </form>
+
+        <form action="/update-token" method="POST" class="updatetoken">
+          <label for="githubToken">Github Token:</label>
+          <div class="githubToken">
+            <input id="githubToken" type="text" name="githubToken" placeholder="github_pat_... / ghp_..." />
           </div>
         </form>
 
@@ -92,7 +99,7 @@
                     <input type="checkbox" class="feedcheck" checked />
                     <p class="feedtext"><%= feed %></p>
                   </code>
-                  <input type="hidden" name="feedUrl" value="<%= feed %>" />
+                  <input type="hidden" name="feedSlug" value="<%= feed %>" />
                 </form>
               </li>
             <% }) %>

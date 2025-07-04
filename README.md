@@ -4,26 +4,13 @@ Fetches Github Releases changelog with API and it will check for any potential b
 
 Mostly useful for checking for docker container updates before breaking something when updating.
 
-## Future additions:
-
-- Add caching?
-- put github token in config when building app
-
 ## Screenshot
 
 ![](screenshot.png)
 
-## Running
+## Running locally
 
-Clone the repo
-
-Create a `.env` file with
-
-```
-GITHUB_TOKEN=YOUR_TOKEN_HERE
-```
-
-Then run
+Clone the repo, then run
 
 ```
 npm start

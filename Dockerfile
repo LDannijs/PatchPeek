@@ -8,6 +8,7 @@ COPY public ./public
 
 # Copy package files and install deps
 COPY package*.json ./
+ENV NODE_ENV=production
 RUN npm install
 
 # Copy the rest of your app

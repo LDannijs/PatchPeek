@@ -108,14 +108,15 @@ input::-webkit-inner-spin-button {
   margin: 0;
 }
 
-.feedurl {
+.feedSlug {
   display: flex;
   gap: 0.5rem;
   align-items: center;
 }
 
-#feedUrl {
-  width: 100%;
+#feedSlug,
+#githubToken {
+  width: 85%;
 }
 
 .markdown-body {
@@ -140,7 +141,7 @@ input::-webkit-inner-spin-button {
 }
 
 .addfeed {
-  padding: 2em 0;
+  padding: 1.5em 0;
 }
 
 .feeds {
@@ -189,4 +190,8 @@ input::-webkit-inner-spin-button {
   font-weight: 600;
   margin-bottom: 1rem;
   color: black;
+}
+
+.updatetoken {
+  padding-bottom: 1.5em;
 }

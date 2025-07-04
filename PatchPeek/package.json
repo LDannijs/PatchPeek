@@ -1,6 +1,7 @@
 {
   "name": "patchpeek",
   "version": "1.2.0",
+  "description": "Quick overview of Github releases changelog using Github API",
   "main": "server.mjs",
   "scripts": {
     "start": "nodemon server.mjs"
@@ -9,7 +10,9 @@
   "author": "",
   "type": "module",
   "license": "ISC",
-  "description": "Quick overview of Github releases changelog using Github API",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "ejs": "^3.1.10",
     "express": "^5.1.0"

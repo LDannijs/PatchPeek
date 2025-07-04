@@ -44,10 +44,24 @@ const hasWarning = (text = "") => {
   return keywords.some((kw) => lower.includes(kw));
 };
 
-async function fetchReleases(repo, githubToken) {
+const cache = {}; // { [repo]: { etag, releases, lastFetched, rendered: { [release.id]: html } } }
+
+async function fetchReleasesWithCache(repo, githubToken) {
   const url = `https://api.github.com/repos/${repo}/releases?per_page=100`;
   const headers = githubToken ? { Authorization: `Bearer ${githubToken}` } : {};
+  if (cache[repo]?.etag) headers["If-None-Match"] = cache[repo].etag;
+
   const res = await fetch(url, { headers });
+
+  // Log rate limit info
+  console.log(
+    `[GitHub Releases] ${repo}: ${res.status} | Remaining: ${res.headers.get("x-ratelimit-remaining")}/${res.headers.get("x-ratelimit-limit")}`
+  );
+
+  if (res.status === 304) {
+    cache[repo].lastFetched = Date.now();
+    return cache[repo].releases;
+  }
 
   if (res.status === 403 && res.headers.get("x-ratelimit-remaining") === "0") {
     const resetEpoch = Number(res.headers.get("x-ratelimit-reset") ?? 0) * 1000;
@@ -58,8 +72,37 @@ async function fetchReleases(repo, githubToken) {
   }
 
   if (!res.ok) throw new Error(`${res.status} fetching ${url}`);
-  return res.json();
+
+  const releases = await res.json();
+  // Keep previous rendered HTML if available
+  const prevRendered = cache[repo]?.rendered || {};
+  cache[repo] = {
+    etag: res.headers.get("etag"),
+    releases,
+    lastFetched: Date.now(),
+    rendered: prevRendered,
+  };
+  return releases;
 }
+
+// Background fetcher
+async function updateAllFeeds() {
+  const { feeds, githubToken } = await readConfig();
+  await Promise.all(
+    feeds.map(async (repo) => {
+      try {
+        await fetchReleasesWithCache(repo, githubToken);
+      } catch (e) {
+        // Ignore errors, handled on demand
+      }
+    })
+  );
+}
+
+// Refresh every 10 minutes
+setInterval(updateAllFeeds, 10 * 60 * 1000);
+// Initial fetch
+updateAllFeeds();
 
 // Render markdown to GitHub-flavored HTML via GitHub API
 async function renderMd(md, repo, githubToken) {
@@ -73,6 +116,11 @@ async function renderMd(md, repo, githubToken) {
     body: JSON.stringify({ text: md, mode: "gfm", context: repo }),
   });
 
+  // Log rate limit info
+  console.log(
+    `[GitHub Markdown] ${repo}: ${res.status} | Remaining: ${res.headers.get("x-ratelimit-remaining")}/${res.headers.get("x-ratelimit-limit")}`
+  );
+
   if (!res.ok) {
     console.error(`GitHub markdown API error: ${res.status}`);
     return `<pre>${md
@@ -85,35 +133,43 @@ async function renderMd(md, repo, githubToken) {
 
 app.get("/", async (_, res) => {
   const { feeds, daysWindow, githubToken } = await readConfig();
-
-  res.render("index", {
-    feedsList: feeds,
-    daysWindow,
-    isAuthenticated: !!githubToken,
-  });
-});
-
-app.get("/api/releases", async (_, res) => {
-  const { feeds, daysWindow, githubToken } = await readConfig();
   const cutoff = Date.now() - daysWindow * 86400000;
+
+  let rateLimitHit = false;
+  let rateLimitReset = 0;
 
   const feedData = await Promise.all(
     feeds.map(async (repo) => {
       try {
-        const items = await fetchReleases(repo, githubToken);
+        let items;
+        if (cache[repo]?.releases) {
+          items = cache[repo].releases;
+        } else {
+          items = await fetchReleasesWithCache(repo, githubToken);
+        }
         const recent = items.filter(
           (r) =>
             !r.draft &&
             !r.prerelease &&
             new Date(r.published_at).getTime() >= cutoff
         );
+
+        // Render markdown only if not already cached
+        if (!cache[repo].rendered) cache[repo].rendered = {};
         const releases = await Promise.all(
-          recent.map(async (r) => ({
-            title: r.name || r.tag_name,
-            date: r.published_at.slice(0, 10),
-            html: await renderMd(r.body ?? "", repo, githubToken),
-            flagged: hasWarning(r.body),
-          }))
+          recent.map(async (r) => {
+            let html = cache[repo].rendered[r.id];
+            if (!html) {
+              html = await renderMd(r.body ?? "", repo, githubToken);
+              cache[repo].rendered[r.id] = html;
+            }
+            return {
+              title: r.name || r.tag_name,
+              date: r.published_at.slice(0, 10),
+              html,
+              flagged: hasWarning(r.body),
+            };
+          })
         );
 
         return {
@@ -121,21 +177,36 @@ app.get("/api/releases", async (_, res) => {
           releases,
           releaseCount: releases.length,
           breakingCount: releases.filter((r) => r.flagged).length,
-          rateLimited: false,
         };
       } catch (e) {
+        if (e.rateLimited) {
+          rateLimitHit = true;
+          rateLimitReset = Math.max(rateLimitReset, e.resetEpoch);
+        }
         return {
           project: `Failed → ${repo}`,
           releases: [],
           releaseCount: 0,
           breakingCount: 0,
-          rateLimited: e.rateLimited ?? false,
         };
       }
     })
   );
 
-  res.json(feedData);
+  const feedsWithReleases = feedData.filter((f) => f.releaseCount > 0);
+  feedsWithReleases.sort((a, b) =>
+    b.breakingCount === a.breakingCount
+      ? b.releaseCount - a.releaseCount
+      : b.breakingCount - a.breakingCount
+  );
+
+  res.render("index", {
+    rateLimitHit,
+    isAuthenticated: !!githubToken,
+    feedsList: feeds,
+    feedsWithReleases,
+    daysWindow,
+  });
 });
 
 app.post("/add-feed", async (req, res) => {

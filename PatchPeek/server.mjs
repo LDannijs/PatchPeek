@@ -85,10 +85,17 @@ async function renderMd(md, repo, githubToken) {
 
 app.get("/", async (_, res) => {
   const { feeds, daysWindow, githubToken } = await readConfig();
-  const cutoff = Date.now() - daysWindow * 86400000;
 
-  let rateLimitHit = false;
-  let rateLimitReset = 0;
+  res.render("index", {
+    feedsList: feeds,
+    daysWindow,
+    isAuthenticated: !!githubToken,
+  });
+});
+
+app.get("/api/releases", async (_, res) => {
+  const { feeds, daysWindow, githubToken } = await readConfig();
+  const cutoff = Date.now() - daysWindow * 86400000;
 
   const feedData = await Promise.all(
     feeds.map(async (repo) => {
@@ -114,36 +121,21 @@ app.get("/", async (_, res) => {
           releases,
           releaseCount: releases.length,
           breakingCount: releases.filter((r) => r.flagged).length,
+          rateLimited: false,
         };
       } catch (e) {
-        if (e.rateLimited) {
-          rateLimitHit = true;
-          rateLimitReset = Math.max(rateLimitReset, e.resetEpoch);
-        }
         return {
           project: `Failed → ${repo}`,
           releases: [],
           releaseCount: 0,
           breakingCount: 0,
+          rateLimited: e.rateLimited ?? false,
         };
       }
     })
   );
 
-  const feedsWithReleases = feedData.filter((f) => f.releaseCount > 0);
-  feedsWithReleases.sort((a, b) =>
-    b.breakingCount === a.breakingCount
-      ? b.releaseCount - a.releaseCount
-      : b.breakingCount - a.breakingCount
-  );
-
-  res.render("index", {
-    rateLimitHit,
-    isAuthenticated: !!githubToken,
-    feedsList: feeds,
-    feedsWithReleases,
-    daysWindow,
-  });
+  res.json(feedData);
 });
 
 app.post("/add-feed", async (req, res) => {

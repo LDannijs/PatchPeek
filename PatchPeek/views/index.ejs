@@ -14,42 +14,7 @@
   <body>
     <div class="layout">
       <div class="content">
-        <% if (rateLimitHit && isAuthenticated) { %>
-        <p class="rateLimitBanner">
-          🚨 GitHub API rate limit exceeded for authenticated requests.
-        </p>
-        <% } else if (rateLimitHit && !isAuthenticated) { %>
-        <p class="rateLimitBanner">
-          🚨 GitHub API rate limit exceeded for unauthenticated requests. Please add a GitHub token to increase your quota.
-        </p>
-        <% } %>
-
-        <% feedsWithReleases.forEach(feed => { %>
-          <details class="wrapper">
-            <summary class="feedMain">
-              <img class="avatar" src="https://github.com/<%= feed.project.split('/')[0] %>.png" alt="<%= feed.project %>" />
-              <p class="project"><%= feed.project %></p>
-              <p class="releaseCount <%= feed.breakingCount ? 'flagged' : '' %>">
-                <%= feed.releaseCount %> releases<%= feed.breakingCount ? ' 🚨' : '' %>
-              </p>
-            </summary>
-            <div class="releaseDiv">
-              <% 
-                const breaking = feed.releases.filter(r => r.flagged);
-                const normal = feed.releases.filter(r => !r.flagged);
-                [...breaking, ...normal].forEach(r => { 
-              %>
-                <details class="release" open>
-                  <summary>
-                    <%= r.title %> (<%= r.date %>)
-                    <% if (r.flagged) { %><span class="flagged">🚨</span><% } %>
-                  </summary>
-                  <div class="markdown-body"><%- r.html %></div>
-                </details>
-              <% }) %>
-            </div>
-          </details>
-        <% }) %>
+        <div id="feedsContainer"></div>
       </div>
       <div class="sidebar">
         <h1>👀 PatchPeek</h1>
@@ -109,5 +74,6 @@
         </ul>
       </div>
     </div>
+    <script src="/main.js" defer></script>
   </body>
 </html>

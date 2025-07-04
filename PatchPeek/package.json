@@ -1,9 +1,9 @@
 {
   "name": "patchpeek",
   "version": "1.1.0",
-  "main": "./PatchPeek/server.mjs",
+  "main": "server.mjs",
   "scripts": {
-    "start": "nodemon ./PatchPeek/server.mjs"
+    "start": "nodemon server.mjs"
   },
   "keywords": [],
   "author": "",

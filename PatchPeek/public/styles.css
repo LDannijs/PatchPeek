@@ -181,16 +181,3 @@ h2 {
   margin: 0;
   padding-left: 5px;
 }
-
-.loading {
-  background: #fff3d1;
-  padding: 1em;
-  border: 2px solid #f1c40f;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: large;
-  margin-bottom: 1rem;
-  color: black;
-  display: flex;
-  justify-content: center;
-}

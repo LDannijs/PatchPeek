@@ -8,6 +8,8 @@ This project came to fruition from me wanting to quickly know if any updates I w
 
 ## IMPORTANT INFO
 
+- This container currently runs as root. I would like to change it so it runs as non-root but i currently dont have enough knowledge on how to. Will fix soon (hopefully).
+
 - It is recommended to not show releases from more then 90 days or so. This is quite a simple javascript application, so the backend isn't as robust to show a lot further then that. I have not thoroughly tested it on how far back it can go while being stable. This app was intended to be used every month when I personally update all my containers.
 
 - The app pulls releases from the GitHub API every 1 hour, and caches it based on the `If-None-Match` request header. This is to use less requests from the API then needed. Considering it only uses the API once every hour, running the app without a GitHub token should provide enough requests for your needs. Of course, adding one is available.

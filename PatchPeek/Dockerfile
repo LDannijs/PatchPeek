@@ -11,8 +11,8 @@ COPY --chown=node:node . .
 
 EXPOSE 3000
 
-# Set the user to a non-root user
-USER node
+# Set the user to root
+USER root
 
 # Run the app
 CMD ["node", "server.mjs"]

@@ -4,7 +4,7 @@ import path from "path";
 
 const app = express();
 const port = 3000;
-const configFile = path.resolve("./config.json");
+const configFile = path.resolve("./data/config.json");
 
 const defaultConfig = { feeds: [], daysWindow: 31, githubToken: "" };
 const keywords = [
@@ -158,6 +158,7 @@ const updateAllFeeds = async () => {
     );
   } finally {
     isUpdateRunning = false;
+    console.log();
   }
 };
 
@@ -267,9 +268,9 @@ app.post("/update-token", async (req, res) => {
 });
 
 (async () => {
-  await updateAllFeeds(); // warm‑up before accepting requests
-  setInterval(updateAllFeeds, 60 * 60 * 1000); // start interval
+  await updateAllFeeds();
+  setInterval(updateAllFeeds, 60 * 60 * 1000); // 1 hour
   app.listen(port, () =>
-    console.log(`Server running at http://localhost:${port}`)
+    console.log(`Server running at http://localhost:${port} \n`)
   );
 })();

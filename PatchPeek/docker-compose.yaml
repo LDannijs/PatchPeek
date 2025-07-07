@@ -1,8 +1,9 @@
 services:
   patchpeek:
     build: .
+    container_name: patchpeek
     ports:
       - "3321:3000"
     volumes:
-      - ./config.json:/app/config.json
+      - ./data:/app/data
     restart: unless-stopped

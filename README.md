@@ -12,7 +12,11 @@ This project came to fruition from me wanting to quickly know if any updates I w
 
 - The app pulls releases from the GitHub API every 1 hour, and caches it based on the `If-None-Match` request header. This is to use less requests from the API then needed. Considering it only uses the API once every hour, running the app without a GitHub token should provide enough requests for your needs. Of course, adding one is available.
 
-## Running locally
+## Docker
+
+Instructions here. Docker is still a bit WIP.
+
+## Locally running / Development
 
 > [!NOTE]
 > This project requires at least `Node 18`

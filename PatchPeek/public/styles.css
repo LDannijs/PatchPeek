@@ -78,6 +78,7 @@ summary::-webkit-details-marker {
 .project {
   margin: 0;
   line-break: anywhere;
+  line-height: 1
 }
 
 .releaseCount {
@@ -89,6 +90,7 @@ summary::-webkit-details-marker {
   margin-bottom: 0;
   padding-right: 25px;
   justify-content: center;
+  line-height: 1;
 }
 
 .flagged {

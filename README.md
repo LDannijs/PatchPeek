@@ -57,5 +57,5 @@ docker compose up -d
 
 ```
 npm install
-npm dev
+npm run dev
 ```

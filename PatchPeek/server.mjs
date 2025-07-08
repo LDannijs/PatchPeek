@@ -22,6 +22,7 @@ app.use(express.static(path.resolve("./public")));
 
 // --- Config ---
 const readConfig = async () => {
+  await fs.mkdir(path.dirname(configFile), { recursive: true });
   try {
     return JSON.parse(await fs.readFile(configFile, "utf-8"));
   } catch {
@@ -29,8 +30,10 @@ const readConfig = async () => {
     return defaultConfig;
   }
 };
+
 const saveConfig = async (config) =>
   fs.writeFile(configFile, JSON.stringify(config, null, 2));
+
 const updateConfigField = async (field, value) => {
   if (typeof field !== "string") return;
   const config = await readConfig();
@@ -41,8 +44,10 @@ const updateConfigField = async (field, value) => {
 // --- Helpers ---
 const hasWarning = (text = "") =>
   keywords.some((kw) => text.toLowerCase().includes(kw));
+
 const isValidRelease = (r, cutoff) =>
   !r.draft && !r.prerelease && new Date(r.published_at).getTime() >= cutoff;
+
 const filterRecentReleases = (releases, cutoff) =>
   releases.filter((r) => isValidRelease(r, cutoff));
 
@@ -56,7 +61,11 @@ async function fetchReleasesWithCache(repo, githubToken) {
 
   const res = await fetch(url, { headers });
   console.log(
-    `[GitHub Releases] ${repo}: ${res.status} | Remaining: ${res.headers.get("x-ratelimit-remaining")}/${res.headers.get("x-ratelimit-limit")}`
+    `[GitHub Releases] ${repo}: ${
+      res.status
+    } | Remaining requests: ${res.headers.get(
+      "x-ratelimit-remaining"
+    )}/${res.headers.get("x-ratelimit-limit")}`
   );
 
   if (res.status === 304) {
@@ -94,7 +103,10 @@ async function renderMd(md, repo, githubToken) {
   });
   if (!res.ok) {
     console.error(`GitHub markdown API error: ${res.status}`);
-    return `<pre>${md.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>`;
+    return `<pre>${md
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")}</pre>`;
   }
   return res.text();
 }

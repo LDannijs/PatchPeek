@@ -7,3 +7,5 @@ services:
     volumes:
       - ./data:/app/data
     restart: unless-stopped
+    # Uncomment the next line to run container as non-root user (node)
+    # user: "1000:1000"

@@ -158,7 +158,7 @@ const updateAllFeeds = async () => {
     );
   } finally {
     isUpdateRunning = false;
-    console.log();
+    console.log(" ");
   }
 };
 

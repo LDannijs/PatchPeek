@@ -4,9 +4,9 @@ WORKDIR /app
 
 COPY package*.json ./
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production 
 
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --verbose
 
 COPY . .
 

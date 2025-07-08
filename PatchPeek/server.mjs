@@ -5,6 +5,8 @@ import path from "path";
 const app = express();
 const port = 3000;
 const configFile = path.resolve("./data/config.json");
+let lastUpdateTime = 0;
+let rateLimitHit = false;
 
 const defaultConfig = { feeds: [], daysWindow: 31, githubToken: "" };
 const keywords = [
@@ -13,7 +15,7 @@ const keywords = [
   "caution",
   "important",
 ];
-const cache = {}; // { [repo]: { etag, releases, lastFetched, rendered: { [release.id]: html } } }
+const cache = {}; // { [repo]: { etag, releases, rendered: { [release.id]: html } } }
 
 app.set("view engine", "ejs");
 app.set("views", path.resolve("./views"));
@@ -51,12 +53,20 @@ const isValidRelease = (r, cutoff) =>
 const filterRecentReleases = (releases, cutoff) =>
   releases.filter((r) => isValidRelease(r, cutoff));
 
+async function loadConfigAndCutoff() {
+  const config = await readConfig();
+  const cutoff = Date.now() - config.daysWindow * 86400000;
+  return { ...config, cutoff };
+}
+
 // --- GitHub API ---
-async function fetchReleasesWithCache(repo, githubToken) {
+async function fetchReleasesWithCache(repo, githubToken, force = false) {
   const url = `https://api.github.com/repos/${repo}/releases?per_page=100`;
   const headers = {
     ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
-    ...(cache[repo]?.etag ? { "If-None-Match": cache[repo].etag } : {}),
+    ...(!force && cache[repo]?.etag
+      ? { "If-None-Match": cache[repo].etag }
+      : {}),
   };
 
   const res = await fetch(url, { headers });
@@ -69,7 +79,6 @@ async function fetchReleasesWithCache(repo, githubToken) {
   );
 
   if (res.status === 304) {
-    cache[repo].lastFetched = Date.now();
     return cache[repo].releases;
   }
   if (res.status === 403 && res.headers.get("x-ratelimit-remaining") === "0") {
@@ -79,13 +88,13 @@ async function fetchReleasesWithCache(repo, githubToken) {
     err.resetEpoch = resetEpoch;
     throw err;
   }
+
   if (!res.ok) throw new Error(`${res.status} fetching ${url}`);
 
   const releases = await res.json();
   cache[repo] = {
     etag: res.headers.get("etag"),
     releases,
-    lastFetched: Date.now(),
     rendered: cache[repo]?.rendered || {},
   };
   return releases;
@@ -125,105 +134,121 @@ async function getRenderedReleaseHtml(r, repo, githubToken) {
   return html;
 }
 
-let isUpdateRunning = false;
-
-const updateAllFeeds = async () => {
-  if (isUpdateRunning) {
-    console.log("[Background Fetch] Skipped — already running");
-    return;
-  }
-
-  isUpdateRunning = true;
+async function processFeed(repo, cutoff, githubToken, force = false) {
   try {
-    const { feeds, daysWindow, githubToken } = await readConfig();
-    const cutoff = Date.now() - daysWindow * 86400000;
+    const releases = await fetchReleasesWithCache(repo, githubToken, force);
+    const recent = releases.filter((r) => isValidRelease(r, cutoff));
+    const recentToRender = recent.filter((r) => !cache[repo]?.rendered?.[r.id]);
 
     await Promise.all(
-      feeds.map(async (repo) => {
-        try {
-          const releases = await fetchReleasesWithCache(repo, githubToken);
-
-          const recentToRender = releases
-            .filter((r) => isValidRelease(r, cutoff))
-            .filter((r) => !cache[repo]?.rendered?.[r.id]);
-
-          const rendered = await Promise.all(
-            recentToRender.map((r) =>
-              getRenderedReleaseHtml(r, repo, githubToken)
-            )
-          );
-
-          if (rendered.length > 0) {
-            console.log(
-              `[GitHub Markdown] ${repo}: rendered ${rendered.length} release${
-                rendered.length !== 1 ? "s" : ""
-              }`
-            );
-          }
-        } catch (err) {
-          console.error(
-            `[Background Fetch] Failed to fetch or render ${repo}:`,
-            err
-          );
-        }
-      })
+      recentToRender.map((r) => getRenderedReleaseHtml(r, repo, githubToken))
     );
+
+    return {
+      project: repo,
+      releases: recent.map((r) => ({
+        title: r.name || r.tag_name,
+        date: r.published_at.slice(0, 10),
+        html: cache[repo].rendered?.[r.id] || "",
+        flagged: hasWarning(r.body),
+      })),
+    };
+  } catch (err) {
+    if (err.rateLimited) {
+      return {
+        project: `Failed → ${repo}`,
+        rateLimited: true,
+        resetEpoch: err.resetEpoch,
+      };
+    }
+    console.error(`[Feed] Failed to process ${repo}:`, err);
+    return { project: `Failed → ${repo}`, releases: [] };
+  }
+}
+
+const updateAllFeeds = async (force = false) => {
+  try {
+    const { feeds, githubToken, cutoff } = await loadConfigAndCutoff();
+
+    let localRateLimitHit = false;
+
+    const results = await Promise.all(
+      feeds.map((repo) => processFeed(repo, cutoff, githubToken, force))
+    );
+
+    for (const result of results) {
+      if (result.rateLimited) {
+        localRateLimitHit = true;
+      }
+    }
+
+    rateLimitHit = localRateLimitHit;
+
+    await cleanCache(feeds, cutoff);
+  } catch (err) {
+    console.error("[Background Fetch] Unexpected error:", err);
   } finally {
-    isUpdateRunning = false;
+    lastUpdateTime = Date.now();
     console.log(" ");
   }
 };
 
+async function cleanCache(feeds, cutoff) {
+  // Remove repos no longer in feeds
+  for (const repo of Object.keys(cache)) {
+    if (!feeds.includes(repo)) {
+      console.log(`[Cache] Removing cached data for removed repo: ${repo}`);
+      delete cache[repo];
+    }
+  }
+
+  // Clean old releases and rendered entries
+  for (const repo of feeds) {
+    if (!cache[repo]) continue;
+    const releases = cache[repo].releases || [];
+    const recentReleases = releases.filter(
+      (r) => new Date(r.published_at).getTime() >= cutoff
+    );
+
+    cache[repo].releases = recentReleases;
+
+    const recentIds = new Set(recentReleases.map((r) => r.id));
+    for (const key of Object.keys(cache[repo].rendered || {})) {
+      if (key.startsWith("promise_")) continue;
+      if (!recentIds.has(Number(key))) {
+        delete cache[repo].rendered[key];
+      }
+    }
+  }
+}
+
 // --- Routes ---
 app.get("/", async (_, res) => {
-  const { feeds, daysWindow, githubToken } = await readConfig();
-  const cutoff = Date.now() - daysWindow * 86400000;
-  let rateLimitHit = false,
-    rateLimitReset = 0;
+  const { feeds, daysWindow, githubToken, cutoff } =
+    await loadConfigAndCutoff();
 
-  const feedData = await Promise.all(
-    feeds.map(async (repo) => {
-      try {
-        const items =
-          cache[repo]?.releases ||
-          (await fetchReleasesWithCache(repo, githubToken));
-        const recent = filterRecentReleases(items, cutoff);
-        const releases = [];
-        const newHtmlNeeded = [];
-        for (const r of recent) {
-          if (!cache[repo]?.rendered?.[r.id]) newHtmlNeeded.push(r.id);
-          releases.push({
-            title: r.name || r.tag_name,
-            date: r.published_at.slice(0, 10),
-            html: await getRenderedReleaseHtml(r, repo, githubToken),
-            flagged: hasWarning(r.body),
-          });
-        }
-        if (newHtmlNeeded.length) {
-          console.log(
-            `[GitHub Markdown] ${repo}: rendered ${newHtmlNeeded.length}/${recent.length} releases`
-          );
-        }
-        return {
-          project: repo,
-          releases,
-          releaseCount: releases.length,
-          breakingCount: releases.filter((r) => r.flagged).length,
-        };
-      } catch (e) {
-        if (e.rateLimited) {
-          rateLimitHit = true;
-          rateLimitReset = Math.max(rateLimitReset, e.resetEpoch);
-        }
-        return {
-          project: `Failed → ${repo}`,
-          releases: [],
-          releaseCount: 0,
-          breakingCount: 0,
-        };
-      }
-    })
-  );
+  res.set("Cache-Control", "no-store");
+
+  const feedData = feeds.map((repo) => {
+    const releases = cache[repo]?.releases || [];
+    const recent = filterRecentReleases(releases, cutoff);
+    const rendered = cache[repo]?.rendered ?? {};
+    const display = recent
+      .map((r) => ({
+        title: r.name || r.tag_name,
+        date: r.published_at.slice(0, 10),
+        html: rendered[r.id] || "<i>Loading...</i>",
+        flagged: hasWarning(r.body),
+      }))
+      .filter((r) => r.html); // hide if not yet rendered
+
+    return {
+      project: repo,
+      releases: display,
+      releaseCount: display.length,
+      breakingCount: display.filter((r) => r.flagged).length,
+    };
+  });
 
   const feedsWithReleases = feedData
     .filter((f) => f.releaseCount > 0)
@@ -239,6 +264,8 @@ app.get("/", async (_, res) => {
     feedsList: feeds,
     feedsWithReleases,
     daysWindow,
+    lastUpdateTime,
+    now: Date.now(),
   });
 });
 
@@ -256,26 +283,30 @@ app.post("/add-feed", async (req, res) => {
     config.feeds.push(repo);
     await saveConfig(config);
   }
+  await updateAllFeeds();
   res.redirect("/");
 });
 
 app.post("/remove-feed", async (req, res) => {
-  let repoSlugs = req.body.feedSlug;
-  if (!repoSlugs) return res.redirect("/");
-  if (!Array.isArray(repoSlugs)) repoSlugs = [repoSlugs];
   const config = await readConfig();
+  const cutoff = Date.now() - config.daysWindow * 86400000;
+  const repoSlugs = [].concat(req.body.feedSlug || []);
   config.feeds = config.feeds.filter((f) => !repoSlugs.includes(f));
   await saveConfig(config);
+  await cleanCache(config.feeds, cutoff);
   res.redirect("/");
 });
+
 app.post("/update-days", async (req, res) => {
   const days = parseInt(req.body.daysWindow, 10);
   if (!isNaN(days) && days > 0) await updateConfigField("daysWindow", days);
+  await updateAllFeeds(true); // force fetch
   res.redirect("/");
 });
 
 app.post("/update-token", async (req, res) => {
   await updateConfigField("githubToken", req.body.githubToken?.trim() || "");
+  await updateAllFeeds();
   res.redirect("/");
 });
 

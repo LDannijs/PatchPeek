@@ -3,9 +3,8 @@ html {
 }
 
 body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji";
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   margin: 2rem;
   background: #222222;
   color: #ffffff;
@@ -28,14 +27,16 @@ body {
 }
 
 /* === RATE LIMIT WARNING === */
-.rateLimitBanner {
+.banner {
   background: #fff3d1;
-  padding: 0.5rem 1rem;
+  padding: 1em;
   border: 2px solid #f1c40f;
   border-radius: 6px;
   font-weight: 600;
-  margin-bottom: 1rem;
+  font-size: large;
   color: black;
+  display: flex;
+  justify-content: center;
 }
 
 /* === CONTENT SECTION === */
@@ -78,7 +79,7 @@ summary::-webkit-details-marker {
 .project {
   margin: 0;
   line-break: anywhere;
-  line-height: 1
+  line-height: 1;
 }
 
 .releaseCount {

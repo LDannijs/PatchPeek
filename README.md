@@ -25,7 +25,7 @@ services:
     image: ghcr.io/ldannijs/patchpeek:latest
     container_name: patchpeek
     ports:
-      - "3321:3000"
+      - "3000:3000"
     volumes:
       - ./data:/app/data
     restart: unless-stopped

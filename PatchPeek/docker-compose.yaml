@@ -1,6 +1,6 @@
 services:
   patchpeek:
-    build: .
+    image: ghcr.io/ldannijs/patchpeek:latest
     container_name: patchpeek
     ports:
       - "3321:3000"

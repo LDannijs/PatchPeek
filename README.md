@@ -14,43 +14,36 @@ This project came to fruition from me wanting to quickly know if any updates I w
 
 ## Docker Compose
 
-The image for this container is not yet published to docker hub (will do soon), so the following guide is not complete.
-
 > [!NOTE]
-> The container runs as root, but has the option to run rootless.
+> The container runs as root, but has the option to run rootless. Read the Important note carefully.
 
-### Run as root
-
-- Clone the repo
-- Open a terminal in the `PatchPeek` folder
-- Then run:
+- Create a directory and add a `docker-compose.yaml` file with the following contents:
 
 ```
-docker compose up -d --build
-```
-
-### Run as rootless
-
-To run the container as rootless:
-
-- Clone the repo
-- Open the `docker-compose.yaml` file and uncomment the following line:
-
-```
+services:
+  patchpeek:
+    image: ghcr.io/ldannijs/patchpeek:latest
+    container_name: patchpeek
+    ports:
+      - "3321:3000"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    # Uncomment the next line to run container as non-root user (node)
     # user: "1000:1000"
 ```
 
-- Open a terminal in the `PatchPeek` folder
-- Then make sure you run:
+> [!IMPORTANT]
+> To run the container as rootless, uncomment the line as seen in the compose file, and then make sure you run:
+>
+> ```
+> sudo chown -R 1000:1000 ./data
+> ```
+
+- Then run:
 
 ```
-sudo chown -R 1000:1000 ./data
-```
-
-- And finally run the container with:
-
-```
-docker compose up -d --build
+docker compose up -d
 ```
 
 ## Locally running / Development

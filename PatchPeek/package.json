@@ -4,7 +4,8 @@
   "description": "Quick overview of Github releases changelog using Github API",
   "main": "server.mjs",
   "scripts": {
-    "start": "nodemon server.mjs"
+    "start": "node server.mjs",
+    "dev": "nodemon server.mjs"
   },
   "keywords": [],
   "author": "",

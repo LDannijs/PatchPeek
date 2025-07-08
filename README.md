@@ -32,22 +32,26 @@ docker compose up -d --build
 ### Run as rootless
 
 To run the container as rootless:
+
 - Clone the repo
 - Open the `docker-compose.yaml` file and uncomment the following line:
+
 ```
     # user: "1000:1000"
 ```
+
 - Open a terminal in the `PatchPeek` folder
 - Then make sure you run:
 
 ```
 sudo chown -R 1000:1000 ./data
 ```
+
 - And finally run the container with:
+
 ```
 docker compose up -d --build
 ```
-
 
 ## Locally running / Development
 
@@ -60,5 +64,5 @@ docker compose up -d --build
 
 ```
 npm install
-npm start
+npm dev
 ```

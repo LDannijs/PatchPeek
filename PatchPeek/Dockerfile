@@ -6,7 +6,7 @@ COPY package*.json ./
 
 ENV NODE_ENV=production 
 
-RUN npm ci --omit=dev --verbose
+RUN npm ci --omit=dev
 
 COPY . .
 

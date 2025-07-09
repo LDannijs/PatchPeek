@@ -5,7 +5,7 @@
   "main": "server.mjs",
   "scripts": {
     "start": "node server.mjs",
-    "dev": "nodemon --ignore data/ server.mjs"
+    "dev": "cross-env NODE_ENV=development nodemon --ignore data/ server.mjs"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +19,7 @@
     "express": "^5.1.0"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "nodemon": "^3.1.10",
     "prettier-plugin-ejs": "^1.0.3"
   }

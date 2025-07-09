@@ -28,6 +28,16 @@
             New content available. <a href="/">Refresh</a>
           </div>
         <% } %>
+        <% if (errorMessage) { %>
+          <div class="banner">
+            <span><%= errorMessage %></span>
+            <button
+              class="dismiss-button"
+              onclick="window.location='/'"
+              aria-label="Dismiss error message"
+            >&times;</button>
+          </div>
+        <% } %>
 
         <% feedsWithReleases.forEach(feed => { %>
           <details class="wrapper">

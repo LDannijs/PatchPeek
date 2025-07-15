@@ -43,17 +43,21 @@ const updateConfigField = async (field, value) => {
 
 const hasWarning = (text) =>
   keywords.some((kw) => text?.toLowerCase().includes(kw));
-const isValidRelease = (r, cutoff) =>
-  !r.draft && !r.prerelease && new Date(r.published_at).getTime() >= cutoff;
+const isValidRelease = (release, cutoff) =>
+  !release.draft &&
+  !release.prerelease &&
+  new Date(release.published_at).getTime() >= cutoff;
 const filterRecentReleases = (releases, cutoff) =>
-  releases.filter((r) => isValidRelease(r, cutoff));
+  releases.filter((release) => isValidRelease(release, cutoff));
 
 const loadConfigAndCutoff = async () => {
   const config = await readConfig();
   return { ...config, cutoff: Date.now() - config.daysWindow * 86400000 };
 };
 
-const fetchReleasesWithCache = async (repo, token, force = false) => {
+// fetches the releases from GitHub API and caches them
+// uses If-None-Match header to avoid unnecessary requests
+const fetchReleases = async (repo, token, force = false) => {
   const url = `https://api.github.com/repos/${repo}/releases?per_page=100`;
   const headers = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -88,7 +92,8 @@ const repoExists = async (repo, token) => {
   return res.status === 200;
 };
 
-const renderMd = async (md, repo, token) => {
+// Fetches markdown from GitHub API and converts it to HTML
+const fetchMd = async (md, repo, token) => {
   if (!md) return "";
   const res = await fetch("https://api.github.com/markdown", {
     method: "POST",
@@ -113,36 +118,45 @@ const renderMd = async (md, repo, token) => {
   return res.text();
 };
 
-const getRenderedReleaseHtml = async (r, repo, token) => {
-  cache[repo].rendered ??= {};
-  if (cache[repo].rendered[r.id]) return cache[repo].rendered[r.id];
-  if (cache[repo].rendered[`promise_${r.id}`])
-    return await cache[repo].rendered[`promise_${r.id}`];
+// Fetches and caches the rendered HTML for a release
+const fetchCache = async (release, repo, token) => {
+  const rendered = (cache[repo].rendered ??= {});
 
-  const promise = renderMd(r.body, repo, token);
-  cache[repo].rendered[`promise_${r.id}`] = promise;
+  if (rendered[release.id]) return rendered[release.id];
+  if (rendered[`promise_${release.id}`])
+    return await rendered[`promise_${release.id}`];
+
+  const promise = fetchMd(release.body, repo, token);
+  rendered[`promise_${release.id}`] = promise;
+
   const html = await promise;
-  cache[repo].rendered[r.id] = html;
-  delete cache[repo].rendered[`promise_${r.id}`];
+  rendered[release.id] = html;
+  delete rendered[`promise_${release.id}`];
+
   return html;
 };
 
+// Processes a single feed/repo and formats the releases
 const processFeed = async (repo, cutoff, token, force = false) => {
   try {
-    const releases = await fetchReleasesWithCache(repo, token, force);
-    const recent = releases.filter((r) => isValidRelease(r, cutoff));
-    const toRender = recent.filter((r) => !cache[repo]?.rendered?.[r.id]);
+    const releases = await fetchReleases(repo, token, force);
+    const recent = releases.filter((release) =>
+      isValidRelease(release, cutoff)
+    );
+    const toRender = recent.filter(
+      (release) => !cache[repo]?.rendered?.[release.id]
+    );
     await Promise.all(
-      toRender.map((r) => getRenderedReleaseHtml(r, repo, token))
+      toRender.map((release) => fetchCache(release, repo, token))
     );
 
     return {
       project: repo,
-      releases: recent.map((r) => ({
-        title: r.name || r.tag_name,
-        date: r.published_at.slice(0, 10),
-        html: cache[repo].rendered?.[r.id] || "",
-        flagged: hasWarning(r.body),
+      releases: recent.map((release) => ({
+        title: release.name || release.tag_name,
+        date: release.published_at.slice(0, 10),
+        html: cache[repo].rendered?.[release.id] || "",
+        flagged: hasWarning(release.body),
       })),
     };
   } catch (err) {
@@ -170,14 +184,15 @@ const cleanCache = async (feeds, cutoff) => {
     }
   }
 
+  // Remove old releases from cache
   for (const repo of feeds) {
     if (!cache[repo]) continue;
     const recent =
       cache[repo].releases?.filter(
-        (r) => new Date(r.published_at).getTime() >= cutoff
+        (release) => new Date(release.published_at).getTime() >= cutoff
       ) || [];
     cache[repo].releases = recent;
-    const ids = new Set(recent.map((r) => r.id));
+    const ids = new Set(recent.map((release) => release.id));
     for (const key of Object.keys(cache[repo].rendered || {})) {
       if (!key.startsWith("promise_") && !ids.has(Number(key)))
         delete cache[repo].rendered[key];
@@ -185,13 +200,14 @@ const cleanCache = async (feeds, cutoff) => {
   }
 };
 
+// Updates all feeds and cleans the cache
 const updateAllFeeds = async (force = false) => {
   try {
     const { feeds, githubToken, cutoff } = await loadConfigAndCutoff();
     const results = await Promise.all(
       feeds.map((repo) => processFeed(repo, cutoff, githubToken, force))
     );
-    rateLimitHit = results.some((r) => r.rateLimited);
+    rateLimitHit = results.some((release) => release.rateLimited);
     await cleanCache(feeds, cutoff);
   } catch (err) {
     console.error("[Background Fetch] Error:", err);
@@ -201,6 +217,7 @@ const updateAllFeeds = async (force = false) => {
   }
 };
 
+// Renders the homepage with the current feed data
 const renderHomepage = async (res, errorMessage = null) => {
   const { feeds, daysWindow, githubToken, cutoff } =
     await loadConfigAndCutoff();
@@ -208,19 +225,19 @@ const renderHomepage = async (res, errorMessage = null) => {
     const recent = filterRecentReleases(cache[repo]?.releases || [], cutoff);
     const rendered = cache[repo]?.rendered ?? {};
     const display = recent
-      .map((r) => ({
-        title: r.name || r.tag_name,
-        date: r.published_at.slice(0, 10),
-        html: rendered[r.id] || "<i>Loading...</i>",
-        flagged: hasWarning(r.body),
+      .map((release) => ({
+        title: release.name || release.tag_name,
+        date: release.published_at.slice(0, 10),
+        html: rendered[release.id] || "<i>Loading...</i>",
+        flagged: hasWarning(release.body),
       }))
-      .filter((r) => r.html);
+      .filter((release) => release.html);
 
     return {
       project: repo,
       releases: display,
       releaseCount: display.length,
-      breakingCount: display.filter((r) => r.flagged).length,
+      breakingCount: display.filter((release) => release.flagged).length,
     };
   });
 

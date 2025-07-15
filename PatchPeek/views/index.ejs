@@ -50,16 +50,16 @@
             </summary>
             <div class="releaseDiv">
               <% 
-                const breaking = feed.releases.filter(r => r.flagged);
-                const normal = feed.releases.filter(r => !r.flagged);
-                [...breaking, ...normal].forEach(r => { 
+                const breaking = feed.releases.filter(release => release.flagged);
+                const normal = feed.releases.filter(release => !release.flagged);
+                [...breaking, ...normal].forEach(release => { 
               %>
                 <details class="release" open>
                   <summary>
-                    <%= r.title %> (<%= r.date %>)
-                    <% if (r.flagged) { %><span class="flagged">🚨</span><% } %>
+                    <%= release.title %> (<%= release.date %>)
+                    <% if (release.flagged) { %><span class="flagged">🚨</span><% } %>
                   </summary>
-                  <div class="markdown-body"><%- r.html %></div>
+                  <div class="markdown-body"><%- release.html %></div>
                 </details>
               <% }) %>
             </div>

@@ -86,22 +86,18 @@
 
         <form method="POST" action="/add-feed" class="addfeed">
           <label for="feedSlug">GitHub Repo Slug:</label>
-          <div class="feedSlug">
-            <input
-              id="feedSlug"
-              name="feedSlug"
-              type="text"
-              placeholder="user/repo"
-              required
-            />
-          </div>
+          <input
+            id="feedSlug"
+            name="feedSlug"
+            type="text"
+            placeholder="user/repo"
+            required
+          />
         </form>
 
         <form action="/update-token" method="POST" class="updatetoken">
           <label for="githubToken">GitHub Token:</label>
-          <div class="githubToken">
-            <input id="githubToken" type="text" name="githubToken" placeholder="github_pat_... / ghp_..." />
-          </div>
+          <input id="githubToken" type="text" name="githubToken" placeholder="github_pat_... / ghp_..." />
         </form>
         <p class="lastUpdated">Last updated: <%= new Date(lastUpdateTime).toLocaleString() %></p>
 
@@ -125,5 +121,20 @@
         </ul>
       </div>
     </div>
+    <div id="loadingOverlay" style="display: none;">  
+      <div class="spinner"></div>
+    </div>
   </body>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      const forms = document.querySelectorAll('form');
+
+      forms.forEach(form => {
+        form.addEventListener('submit', () => {
+          loadingOverlay.style.display = 'flex';
+        });
+      });
+    });
+  </script>
 </html>

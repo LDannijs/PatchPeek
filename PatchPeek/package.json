@@ -1,6 +1,6 @@
 {
   "name": "patchpeek",
-  "version": "1.2.0",
+  "version": "1.0.0",
   "description": "Quick overview of Github releases changelog using Github API",
   "main": "server.mjs",
   "scripts": {
@@ -8,9 +8,9 @@
     "dev": "cross-env NODE_ENV=development nodemon --ignore data/ server.mjs"
   },
   "keywords": [],
-  "author": "",
+  "author": "LDannijs",
   "type": "module",
-  "license": "ISC",
+  "license": "MIT",
   "engines": {
     "node": ">=18"
   },

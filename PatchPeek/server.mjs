@@ -289,7 +289,15 @@ app.post("/update-days", async (req, res) => {
 });
 
 app.post("/update-token", async (req, res) => {
-  await updateConfigField("githubToken", req.body.githubToken?.trim() || "");
+  const token = req.body.githubToken?.trim() || "";
+  const validFormat = !token || /^github_pat_|^ghp_/.test(token);
+  if (!validFormat) {
+    return renderHomepage(
+      res,
+      "Invalid GitHub token format. Please check your token."
+    );
+  }
+  await updateConfigField("githubToken", token);
   await updateAllFeeds();
   res.redirect("/");
 });

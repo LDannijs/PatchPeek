@@ -1,4 +1,4 @@
-# 👀 PatchPeek (WIP)
+# 👀 PatchPeek
 
 PatchPeek fetches the changelog of GitHub releases with the GitHub API, while checking for any potential breaking changes and puts it into a clean interface.
 
@@ -8,9 +8,9 @@ This project came to fruition from me wanting to quickly know if any updates I w
 
 ## IMPORTANT INFO
 
-- This app is intended to be used once every month, which is when I personally update all my containers. You can change the days to look back for, and it works if you enter 365 days for example, but be aware of heavy GitHub API usage and longer load times. Just so you know, I am not condoning usage this far back.
+- This app is intended to be used/visited once every month, which is when I personally update all my containers. You can change the days to look back for, and while it does work if you enter 365 days for example, be aware of heavy GitHub API usage and longer load times. Just so you know, I am not condoning usage this far back, as i have not tested the rigidity of it.
 
-- The app pulls releases from the GitHub API every 1 hour, and caches it based on the `If-None-Match` request header. This is to use less requests from the API then needed. Considering it only uses the API once every hour, running the app without a GitHub token should provide enough requests for your needs. Of course, adding one is available.
+- The app pulls releases from the GitHub API every 1 hour, and caches it based on the `If-None-Match` request header. This is to use less requests from the API then needed. Considering it only uses the API once every hour, running the app without a GitHub token should provide enough requests for your needs (but it is recommended to add one).
 
 ## Docker Compose
 
@@ -45,6 +45,8 @@ services:
 ```
 docker compose up -d
 ```
+
+Github token creation can be found here: https://github.com/settings/personal-access-tokens
 
 ## Locally running / Development
 

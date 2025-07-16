@@ -14,7 +14,7 @@
   <body>
     <div class="layout">
       <div class="menubar">
-        <h1>👀 PatchPeek</h1>
+        <h1>&#128064; PatchPeek</h1>
         <button onclick="location.href='/settings'">Settings Page</button>
         <label for="daysWindow">Showing releases from the last <%= daysWindow %> days</label>
       </div>
@@ -50,7 +50,7 @@
               <img class="avatar" src="https://github.com/<%= feed.project.split('/')[0] %>.png" alt="<%= feed.project %>" />
               <p class="project"><%= feed.project %></p>
               <p class="releaseCount <%= feed.breakingCount ? 'flagged' : '' %>">
-                <%= feed.releaseCount %> releases<%= feed.breakingCount ? ' 🚨' : '' %>
+                <%= feed.releaseCount %> releases<%- feed.breakingCount ? ' &#128680;' : '' %>
               </p>
             </summary>
             <div class="releaseDiv">
@@ -62,7 +62,7 @@
                 <details class="release" open>
                   <summary>
                     <%= release.title %> (<%= release.date %>)
-                    <% if (release.flagged) { %><span class="flagged">🚨</span><% } %>
+                    <% if (release.flagged) { %><span class="flagged">&#128680;</span><% } %>
                   </summary>
                   <div class="markdown-body"><%- release.html %></div>
                 </details>

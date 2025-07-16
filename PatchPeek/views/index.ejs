@@ -13,6 +13,11 @@
   </head>
   <body>
     <div class="layout">
+      <div class="menubar">
+        <h1>👀 PatchPeek</h1>
+        <button onclick="location.href='/settings'">Settings Page</button>
+        <label for="daysWindow">Showing releases from the last <%= daysWindow %> days</label>
+      </div>
       <div class="content">
         <% if (rateLimitHit && isAuthenticated) { %>
         <p class="banner">
@@ -65,60 +70,6 @@
             </div>
           </details>
         <% }) %>
-      </div>
-      <div class="sidebar">
-        <h1>👀 PatchPeek</h1>
-
-        <form method="POST" action="/update-days">
-          <label for="daysWindow">Show releases from the last</label>
-          <input
-            type="number"
-            id="daysWindow"
-            name="daysWindow"
-            min="1"
-            value="<%= daysWindow %>"
-            required
-            class="dayswindow"
-            onchange="this.form.submit()"
-          />
-          days
-        </form>
-
-        <form method="POST" action="/add-feed" class="addfeed">
-          <label for="feedSlug">GitHub Repo Slug:</label>
-          <input
-            id="feedSlug"
-            name="feedSlug"
-            type="text"
-            placeholder="user/repo"
-            required
-          />
-        </form>
-
-        <form action="/update-token" method="POST" class="updatetoken">
-          <label for="githubToken">GitHub Token:</label>
-          <input id="githubToken" type="text" name="githubToken" placeholder="github_pat_... / ghp_..." />
-        </form>
-        <p class="lastUpdated">Last updated: <%= new Date(lastUpdateTime).toLocaleString() %></p>
-
-        <h2>Current Feeds</h2>
-        <ul class="feedslist">
-          <% if (feedsList.length) { %>
-            <% feedsList.forEach(feed => { %>
-              <li>
-                <form method="POST" action="/remove-feed" onchange="this.submit()">
-                  <code class="feeds">
-                    <input type="checkbox" class="feedcheck" checked />
-                    <p class="feedtext"><%= feed %></p>
-                  </code>
-                  <input type="hidden" name="feedSlug" value="<%= feed %>" />
-                </form>
-              </li>
-            <% }) %>
-          <% } else { %>
-            <li><em>None yet</em></li>
-          <% } %>
-        </ul>
       </div>
     </div>
     <div id="loadingOverlay" style="display: none;">  

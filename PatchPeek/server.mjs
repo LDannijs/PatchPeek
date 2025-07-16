@@ -266,6 +266,16 @@ app.get("/", async (_, res) => {
   await renderHomepage(res);
 });
 
+app.get("/settings", async (req, res) => {
+  const { feeds, daysWindow } = await loadConfigAndCutoff();
+  res.render("settings", {
+    feedsList: feeds,
+    daysWindow,
+    lastUpdateTime,
+    now: Date.now(),
+  });
+});
+
 app.post("/add-feed", async (req, res) => {
   const raw = req.body.feedSlug?.trim();
   const match = raw?.match(

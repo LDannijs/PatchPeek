@@ -6,10 +6,20 @@ body {
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji";
-  margin: 30px;
+  padding: 30px;
+  margin: 0;
   background: #222222;
   color: #ffffff;
-  min-width: fit-content;
+  min-width: 450px;
+}
+
+@media only screen and (max-width: 500px) {
+  .content,
+  .sidebar {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
 }
 
 .layout {
@@ -20,12 +30,11 @@ body {
 
 .content {
   flex: 4;
-  min-width: 400px;
+  min-width: 450px;
 }
 
 .sidebar {
   flex: 1;
-  min-width: 250px;
 }
 
 #loadingOverlay {
@@ -103,14 +112,13 @@ summary {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  width: 100%;
   gap: 15px;
   cursor: pointer;
   font-weight: 700;
   font-size: 1.1em;
   border-radius: 15px;
   list-style: none;
-  position: relative;
+  box-sizing: border-box;
   padding: 15px;
   color: #ffffff;
   user-select: none;
@@ -141,7 +149,6 @@ summary::-webkit-details-marker {
   margin-left: auto;
   margin-top: 0;
   margin-bottom: 0;
-  padding-right: 25px;
   justify-content: center;
   line-height: 1;
 }
@@ -171,6 +178,11 @@ details.release {
   display: flex;
 }
 
+.title {
+  font-size: 1.7em;
+  text-wrap: nowrap;
+}
+
 .settings {
   padding: 15px;
   position: relative;
@@ -196,7 +208,7 @@ details.release {
 .settingsContent {
   margin-top: 10px;
   position: absolute;
-  width: 325px;
+  width: 300px;
   margin: auto;
   top: 55px;
   right: 0;
@@ -221,14 +233,6 @@ details.release {
 
 .addfeed {
   padding: 1em 0;
-}
-
-.lastUpdated {
-  margin: 0;
-}
-
-#repositories {
-  padding-top: 30px;
 }
 
 label {

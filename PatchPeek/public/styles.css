@@ -9,23 +9,33 @@ body {
   margin: 0;
   background: #222222;
   color: #ffffff;
+  min-width: fit-content;
+}
+
+@media only screen and (max-width: 500px) {
+  .lastUpdated {
+    display: none;
+  }
+  .settings {
+    margin-left: auto;
+  }
 }
 
 .layout {
   display: flex;
   flex-wrap: wrap;
   gap: 2rem;
-  margin: 0 2rem 2rem;
+  margin: 0 30px 30px;
 }
 
 .content {
   flex: 4;
-  min-width: 350px;
+  /*min-width: 450px;*/
 }
 
 .sidebar {
   flex: 1;
-  min-width: 250px;
+  /*min-width: 250px;*/
 }
 
 #loadingOverlay {
@@ -104,6 +114,7 @@ body {
 
 .title {
   font-size: 1.7em;
+  text-wrap: nowrap;
 }
 
 .lastUpdated {
@@ -116,6 +127,12 @@ body {
   position: relative;
   margin-top: auto;
   margin-bottom: auto;
+  background: #232323;
+  border: 1px solid #707070;
+}
+
+.settings:hover {
+  background: #303030;
 }
 
 .settingsSummary {
@@ -129,20 +146,22 @@ body {
 .settingsContent {
   margin-top: 10px;
   position: absolute;
-  top: 100%;
+  width: 300px;
+  margin: auto;
+  top: 55px;
   right: 0;
   background: #000000;
   border: 1px solid #333;
   border-radius: 10px;
   padding: 1rem;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-  min-width: 350px;
+  flex-direction: column;
 }
 
 .settingsContent:after {
   content: " ";
   position: absolute;
-  right: 35px;
+  right: 33px;
   top: -15px;
   border-top: none;
   border-right: 15px solid transparent;
@@ -163,7 +182,6 @@ summary {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  width: 100%;
   gap: 15px;
   cursor: pointer;
   font-weight: 700;
@@ -257,7 +275,7 @@ input[type="number"] {
 }
 
 .dayswindow {
-  width: 3em;
+  width: 30px;
   padding: 0.2rem;
   margin: 0 0.3rem;
 }

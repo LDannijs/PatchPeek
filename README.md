@@ -1,5 +1,7 @@
 # 👀 PatchPeek
 
+## V1.136.0 is giving major reponsive web issues. Try to narrow down fix.
+
 PatchPeek fetches the changelog of GitHub releases with the GitHub API, while checking for any potential breaking changes and puts it into a clean interface.
 
 ![](screenshot.png)

@@ -6,9 +6,10 @@ body {
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji";
-  margin: 2rem;
+  margin: 30px;
   background: #222222;
   color: #ffffff;
+  min-width: fit-content;
 }
 
 .layout {
@@ -19,7 +20,7 @@ body {
 
 .content {
   flex: 4;
-  min-width: 350px;
+  min-width: 400px;
 }
 
 .sidebar {
@@ -166,12 +167,68 @@ details.release {
 }
 
 /* === SIDEBAR SECTION === */
-.addfeed {
-  padding: 1.5em 0;
+.header {
+  display: flex;
 }
 
-.updatetoken {
-  padding-bottom: 1.5em;
+.settings {
+  padding: 15px;
+  position: relative;
+  margin-top: auto;
+  margin-left: auto;
+  margin-bottom: auto;
+  background: #232323;
+  border: 1px solid #707070;
+}
+
+.settings:hover {
+  background: #303030;
+}
+
+.settingsSummary {
+  padding: 0;
+}
+
+.settingsTitle {
+  margin: 0;
+}
+
+.settingsContent {
+  margin-top: 10px;
+  position: absolute;
+  width: 325px;
+  margin: auto;
+  top: 55px;
+  right: 0;
+  background: #000000;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  flex-direction: column;
+}
+
+.settingsContent:after {
+  content: " ";
+  position: absolute;
+  right: 33px;
+  top: -15px;
+  border-top: none;
+  border-right: 15px solid transparent;
+  border-left: 15px solid transparent;
+  border-bottom: 15px solid black;
+}
+
+.addfeed {
+  padding: 1em 0;
+}
+
+.lastUpdated {
+  margin: 0;
+}
+
+#repositories {
+  padding-top: 30px;
 }
 
 label {
@@ -192,11 +249,11 @@ input[type="number"] {
 
 #feedSlug,
 #githubToken {
-  width: 85%;
+  width: stretch;
 }
 
 .dayswindow {
-  width: 3em;
+  width: 30px;
   padding: 0.2rem;
   margin: 0 0.3rem;
 }

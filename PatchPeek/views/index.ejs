@@ -67,23 +67,38 @@
         <% }) %>
       </div>
       <div class="sidebar">
-        <h1>👀 PatchPeek</h1>
-
-        <form method="POST" action="/update-days">
-          <label for="daysWindow">Show releases from the last</label>
-          <input
-            type="number"
-            id="daysWindow"
-            name="daysWindow"
-            min="1"
-            value="<%= daysWindow %>"
-            required
-            class="dayswindow"
-            onchange="this.form.submit()"
-          />
-          days
-        </form>
-
+        <div class="header">
+          <h1>👀 PatchPeek</h1>
+          <details class="settings">
+            <summary class="settingsSummary">
+              <p class="settingsTitle" >Settings</p>
+            </summary>
+            <div class="settingsContent">
+              <form method="POST" action="/update-days">
+                <label for="daysWindow">Show releases from the last</label>
+                <input
+                  type="number"
+                  id="daysWindow"
+                  name="daysWindow"
+                  min="1"
+                  value="<%= daysWindow %>"
+                  required
+                  class="dayswindow"
+                  onchange="this.form.submit()"
+                />
+                days
+              </form>
+              <hr>
+              <form action="/update-token" method="POST" class="updatetoken">
+                <label for="githubToken">GitHub Token:</label>
+                <input id="githubToken" type="text" name="githubToken" placeholder="github_pat_... / ghp_..." />
+              </form>
+            </div>
+          </details>
+        </div>
+        <p class="lastUpdated">Last updated: <%= new Date(lastUpdateTime).toLocaleString() %></p>
+        <h2 id="repositories">Repositories</h2>
+        <hr>
         <form method="POST" action="/add-feed" class="addfeed">
           <label for="feedSlug">GitHub Repo Slug:</label>
           <input
@@ -94,14 +109,6 @@
             required
           />
         </form>
-
-        <form action="/update-token" method="POST" class="updatetoken">
-          <label for="githubToken">GitHub Token:</label>
-          <input id="githubToken" type="text" name="githubToken" placeholder="github_pat_... / ghp_..." />
-        </form>
-        <p class="lastUpdated">Last updated: <%= new Date(lastUpdateTime).toLocaleString() %></p>
-
-        <h2>Current Feeds</h2>
         <ul class="feedslist">
           <% if (feedsList.length) { %>
             <% feedsList.forEach(feed => { %>

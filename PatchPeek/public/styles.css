@@ -134,12 +134,10 @@ body {
 }
 
 .settings {
-  padding: 8px 15px;
   position: relative;
   margin-left: 20px;
   margin-bottom: auto;
   background: #232323;
-  border: 1px solid #707070;
 }
 
 .settings:hover {
@@ -147,7 +145,8 @@ body {
 }
 
 .settingsSummary {
-  padding: 0;
+  padding: 8px 15px;
+  border: 1px solid #707070;
 }
 
 .settingsTitle {
@@ -317,6 +316,7 @@ h2 {
   width: 20px;
   margin: 3px 0;
   height: 20px;
+  cursor: pointer;
 }
 
 .feedtext {

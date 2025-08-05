@@ -14,8 +14,12 @@ This project came to fruition from me wanting to quickly know if any updates I w
 
 ## Roadmap
 
-- Search function
+- Repo delete confirmation (confirm element)
+- Allow full repo url
+- 24h vs 12h switch
 - Redirect to github release page
+- Search function
+- Create logo?
 
 ## Docker Compose
 

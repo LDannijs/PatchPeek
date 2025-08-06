@@ -1,4 +1,5 @@
 import express from "express";
+import pLimit from "p-limit";
 import fs from "fs/promises";
 import path from "path";
 
@@ -7,6 +8,7 @@ const port = 3000;
 const configFile = path.resolve("./data/config.json");
 let lastUpdateTime = 0;
 let rateLimitHit = false;
+const limit = pLimit(5); // Max 5 repos in parallel
 
 const defaultConfig = { feeds: [], daysWindow: 31, githubToken: "" };
 const keywords = [
@@ -60,25 +62,34 @@ const loadConfigAndCutoff = async () => {
 
 // Fetch releases with HTML-rendered markdown from GitHub
 const fetchReleases = async (repo, token, cutoff, force = false) => {
-  const commonHeaders = {
-    Accept: "application/vnd.github.v3.html+json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(!force && cache[repo]?.etag ? { "If-None-Match": cache[repo].etag } : {}),
-  };
-
   let allReleases = [];
   let page = 1;
   const maxPages = 5;
+  let etag;
 
   while (page <= maxPages) {
-    console.log(`[GitHub Releases] Fetching ${repo} page ${page}`);
-    const url = `https://api.github.com/repos/${repo}/releases?per_page=30&page=${page}`;
-    const res = await fetch(url, { headers: commonHeaders });
+    const headers = {
+      Accept: "application/vnd.github.v3.html+json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(!force && page === 1 && cache[repo]?.etag ? { "If-None-Match": cache[repo].etag } : {}),
+    };
 
-    if (res.status === 304) return cache[repo].releases;
+    const url = `https://api.github.com/repos/${repo}/releases?per_page=30&page=${page}`;
+    const res = await fetch(url, { headers });
+    console.log(`[GitHub Releases] Fetching ${repo} page ${page} | Remaining requests: ${res.headers.get("x-ratelimit-remaining")}/${res.headers.get("x-ratelimit-limit")}`);
+
+    if (page === 1 && res.status === 304) {
+      console.log(`[GitHub Releases] ${repo} not modified, using cache`);
+      return cache[repo].releases;
+    }
+
     if (res.status === 403 && res.headers.get("x-ratelimit-remaining") === "0")
       throw Object.assign(new Error("rateLimited"), { rateLimited: true });
     if (!res.ok) throw new Error(`${res.status} fetching ${url}`);
+
+    if (page === 1) {
+      etag = res.headers.get("etag") || cache[repo]?.etag;
+    }
 
     const pageReleases = await res.json();
     if (!Array.isArray(pageReleases) || pageReleases.length === 0) break;
@@ -92,7 +103,6 @@ const fetchReleases = async (repo, token, cutoff, force = false) => {
       flagged: hasWarning(r.body_html),
     })));
 
-    // Check oldest date in this page
     const oldest = new Date(pageReleases[pageReleases.length - 1].published_at).getTime();
     if (oldest < cutoff) {
       console.log(`[GitHub Releases] Stopping ${repo} — oldest release older than cutoff`);
@@ -103,12 +113,13 @@ const fetchReleases = async (repo, token, cutoff, force = false) => {
   }
 
   cache[repo] = {
-    etag: cache[repo]?.etag,
+    etag,
     releases: allReleases,
   };
 
   return allReleases;
 };
+
 
 
 const repoExists = async (repo, token) => {
@@ -175,7 +186,9 @@ const updateAllFeeds = async (force = false) => {
   try {
     const { feeds, githubToken, cutoff } = await loadConfigAndCutoff();
     const results = await Promise.all(
-      feeds.map((repo) => processFeed(repo, cutoff, githubToken, force))
+      feeds.map(repo =>
+        limit(() => processFeed(repo, cutoff, githubToken, force))
+      )
     );
     rateLimitHit = results.some((release) => release.rateLimited);
     await cleanCache(feeds, cutoff);
@@ -291,7 +304,7 @@ app.post("/update-token", async (req, res) => {
 
 (async () => {
   await updateAllFeeds();
-  setInterval(updateAllFeeds, 60 * 60 * 1000);
+  setInterval(updateAllFeeds,60 * 60 * 1000);
   app.listen(port, () =>
     console.log(`Server running at http://localhost:${port} \n`)
   );

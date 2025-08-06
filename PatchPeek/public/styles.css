@@ -253,6 +253,11 @@ details.release {
   border-radius: 15px;
 }
 
+.markdown-body h1,
+.markdown-body h2 {
+  border-bottom-color: #5d5d5db3 !important;
+}
+
 /* === SIDEBAR SECTION === */
 
 .addfeed {

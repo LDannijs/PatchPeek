@@ -1,5 +1,7 @@
 # 👀 PatchPeek
 
+this branch serves as me trying to manually rewrite the backend. itll stay barebones for a bit.
+
 PatchPeek fetches the changelog of GitHub releases with the GitHub API, while checking for any potential breaking changes and puts it into a clean interface.
 
 ![](screenshot.png)

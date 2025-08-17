@@ -205,6 +205,14 @@ summary {
   -moz-user-select: none;
 }
 
+summary:hover {
+  background: #3a3a3a;
+}
+
+summary:hover.flagged {
+  background: #542c2c !important;
+}
+
 summary::-webkit-details-marker {
   display: none;
 }
@@ -233,9 +241,15 @@ summary::-webkit-details-marker {
   line-height: 1;
 }
 
-.flagged {
+.releaseCount.flagged {
   color: #ff4d4d !important;
   font-weight: 700;
+}
+
+.markdown-body.flagged,
+.release.flagged,
+summary.flagged {
+  background: #3c2020 !important;
 }
 
 .releaseDiv {

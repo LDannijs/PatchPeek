@@ -84,12 +84,12 @@
                 const normal = feed.releases.filter(release => !release.flagged);
                 [...breaking, ...normal].forEach(release => { 
               %>
-                <details class="release" open>
-                  <summary>
+                <details class="release <%= release.flagged ? 'flagged' : '' %>" open>
+                  <summary class="<%= release.flagged ? 'flagged' : '' %>">
                     <%= release.title %> (<%= release.date %>)
-                    <% if (release.flagged) { %><span class="flagged">🚨</span><% } %>
+                    <% if (release.flagged) { %><span>🚨</span><% } %>
                   </summary>
-                  <div class="markdown-body"><%- release.html %></div>
+                  <div class="markdown-body <%= release.flagged ? 'flagged' : '' %>"><%- release.html %></div>
                 </details>
               <% }) %>
             </div>

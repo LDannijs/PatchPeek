@@ -19,7 +19,7 @@
       <div class="content">
         <% allReleases.forEach(({ repo, releases, releaseCount }) => { %>
           <details class="wrapper">
-            <summary class="feedMain">
+            <summary class="repoMain">
               <img class="avatar" src="https://github.com/<%= repo.split('/')[0] %>.png"/>
               <p class="project"><%= repo %></p>
               <p class="releaseCount">
@@ -30,8 +30,9 @@
               <% releases.forEach(release => { %>
                 <details class="release">
                   <summary>
-                    <%= release.name || release.tag_name %> 
+                    <a class="releaseName" href="<%= release.html_url %>"><%= release.name || release.tag_name %> 
                     (<%= new Date(release.published_at).toLocaleDateString() %>)
+                    </a>
                   </summary>
                   <div class="markdown-body"><%- release.body_html %></div>
                 </details>
@@ -42,17 +43,27 @@
       </div>
       <div class="sidebar">
         <h2 id="repositories">Repositories</h2>
+        <form method="POST" action="/add-repo" class="addrepo">
+          <label for="repoSlug">Enter GitHub repository slug:</label>
+          <input
+            id="repoSlug"
+            name="repoSlug"
+            type="text"
+            placeholder="user/repo"
+            required
+          />
+        </form>
         <hr>
-        <ul class="feedslist">
+        <ul class="reposlist">
           <% if (allReleases.length) { %>
             <% allReleases.forEach(({ repo }) => { %>
               <li>
-                <form method="POST" action="/remove-feed" onchange="this.submit()">
-                  <code class="feeds">
-                    <input type="checkbox" class="feedcheck" checked />
-                    <p class="feedtext"><%= repo %></p>
+                <form method="POST" action="/remove-repo" onchange="this.submit()">
+                  <code class="repos">
+                    <input type="checkbox" class="repocheck" checked />
+                    <p class="repotext"><%= repo %></p>
                   </code>
-                  <input type="hidden" name="feedSlug" value="<%= repo %>" />
+                  <input type="hidden" name="repoSlug" value="<%= repo %>" />
                 </form>
               </li>
             <% }) %>

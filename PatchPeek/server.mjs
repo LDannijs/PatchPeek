@@ -53,6 +53,27 @@ app.get("/debug", (req, res) => {
   res.json(cachedData);
 });
 
+app.post("/add-repo", async (req, res) => {
+  const newRepo = req.body.repoSlug.trim();
+
+  if (!config.repos.includes(newRepo)) {
+    config.repos.push(newRepo);
+    fs.writeFileSync("./data/config.json", JSON.stringify(config, null, 2));
+  }
+  await refreshAllReleases();
+  res.redirect("/");
+});
+
+app.post("/remove-repo", async (req, res) => {
+  const repoToRemove = req.body.repoSlug.trim();
+  config.repos = config.repos.filter((r) => r !== repoToRemove);
+  fs.writeFileSync("./data/config.json", JSON.stringify(config, null, 2));
+  cachedData = cachedData.filter((item) => item.repo !== repoToRemove);
+
+  await refreshAllReleases();
+  res.redirect("/");
+});
+
 (async () => {
   await refreshAllReleases();
   setInterval(refreshAllReleases, 60 * 60 * 1000); // 1 hour

@@ -14,6 +14,32 @@
   <body>
     <div class="header">
       <h1 class="title">👀 PatchPeek</h1>
+      <details class="settings">
+        <summary class="settingsSummary">
+          <p class="settingsTitle" >Settings</p>
+        </summary>
+        <div class="settingsContent">
+          <form method="POST" action="/update-days">
+            <label for="daysWindow">Show releases from the last</label>
+            <input
+              type="number"
+              id="daysWindow"
+              name="daysWindow"
+              min="1"
+              value="<%= daysWindow %>"
+              required
+              class="dayswindow"
+              onchange="this.form.submit()"
+            />
+            days
+          </form>
+          <hr>
+          <form action="/update-token" method="POST" class="updatetoken">
+            <label for="githubToken">GitHub Token:</label>
+            <input id="githubToken" type="text" name="githubToken" placeholder="github_pat_... / ghp_..." />
+          </form>
+        </div>
+      </details>
     </div>
     <div class="layout">
       <div class="content">
@@ -30,7 +56,7 @@
               <% releases.forEach(release => { %>
                 <details class="release">
                   <summary>
-                    <a class="releaseName" href="<%= release.html_url %>"><%= release.name || release.tag_name %> 
+                    <a class="releaseName <%= release.flagged ? 'flagged' : '' %>" href="<%= release.html_url %>"><%= release.name || release.tag_name %> 
                     (<%= new Date(release.published_at).toLocaleDateString() %>)
                     </a>
                   </summary>

@@ -86,10 +86,15 @@ async function refreshAllReleases() {
           if (!a.flagged && b.flagged) return 1;
           return new Date(b.published_at) - new Date(a.published_at);
         });
+
+        const releaseCount = releases.length;
+        const hasFlagged = releases.some((r) => r.flagged);
+
         return {
           repo,
           releases,
-          releaseCount: releases.length,
+          releaseCount,
+          hasFlagged,
         };
       })
     );

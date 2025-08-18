@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path";
-
+import fs from "fs";
 
 const app = express();
 app.set("view engine", "ejs");
@@ -8,53 +8,55 @@ app.set("views", path.resolve("./views"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.resolve("./public")));
 
-const repos = [
-  { owner: "LDannijs", repo: "PatchPeek" },
-  { owner: "nodejs", repo: "node" },
-  // Add more repos as needed
-];
+const config = JSON.parse(fs.readFileSync("./data/config.json", "utf-8"));
 
-async function fetchReleases(owner, repo) {
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
+async function fetchReleases(repo) {
+  const res = await fetch(`https://api.github.com/repos/${repo}/releases`, {
     headers: {
-      "Accept": "application/vnd.github.html+json",
-      // "Authorization": `token YOUR_GITHUB_TOKEN` // Optional for rate limits
-    }
+      Accept: "application/vnd.github.html+json",
+      Authorization: config.githubToken
+        ? `token ${config.githubToken}`
+        : undefined,
+    },
   });
 
-  if (!res.ok) throw new Error(`GitHub API error (${owner}/${repo}): ${res.status}`);
+  if (!res.ok) throw new Error(`GitHub API error (${repo}): ${res.status}`);
   return res.json();
 }
 
-// In-memory store for releases data
 let cachedData = [];
 
-// Function to refresh cached data for all repos
 async function refreshAllReleases() {
   console.log("Refreshing GitHub releases cache...");
   try {
     const results = await Promise.all(
-      repos.map(async ({ owner, repo }) => {
-        const releases = await fetchReleases(owner, repo);
-        return { owner, repo, releases };
+      config.repos.map(async (repo) => {
+        const releases = await fetchReleases(repo);
+        return { repo, releases, releaseCount: releases.length };
       })
     );
     cachedData = results;
     console.log("GitHub releases cache updated.");
   } catch (err) {
     console.error("Failed to refresh GitHub releases:", err.message);
-    // Keep old cachedData on failure
   }
 }
 
-// Initial fetch on startup
-refreshAllReleases();
-
-// Refresh every hour (3600000 ms)
-setInterval(refreshAllReleases, 3600000);
-
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
+  if (cachedData.length === 0) {
+    await refreshAllReleases();
+  }
   res.render("index", { allReleases: cachedData });
 });
 
-app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+app.get("/debug", (req, res) => {
+  res.json(cachedData);
+});
+
+(async () => {
+  await refreshAllReleases();
+  setInterval(refreshAllReleases, 60 * 60 * 1000); // 1 hour
+  app.listen(3000, () =>
+    console.log(`Server running at http://localhost:3000 \n`)
+  );
+})();

@@ -12,23 +12,55 @@
     />
   </head>
   <body>
+    <div class="header">
+      <h1 class="title">👀 PatchPeek</h1>
+    </div>
     <div class="layout">
-      <% allReleases.forEach(({ owner, repo, releases }) => { %>
-    <details class="wrapper">
-      <summary class="feedMain"><%= owner %>/<%= repo %></summary>
-
-      <% releases.forEach(release => { %>
-        <details class="release">
-          <summary>
-            <%= release.name || release.tag_name %> 
-            (<%= new Date(release.published_at).toLocaleDateString() %>)
-          </summary>
-          <div class="markdown-body"><%- release.body_html %></div>
-        </details>
-      <% }) %>
-
-    </details>
-  <% }) %>
+      <div class="content">
+        <% allReleases.forEach(({ repo, releases, releaseCount }) => { %>
+          <details class="wrapper">
+            <summary class="feedMain">
+              <img class="avatar" src="https://github.com/<%= repo.split('/')[0] %>.png"/>
+              <p class="project"><%= repo %></p>
+              <p class="releaseCount">
+                  <%= releaseCount %> releases
+                </p>
+            </summary>
+            <div class="releaseDiv">
+              <% releases.forEach(release => { %>
+                <details class="release">
+                  <summary>
+                    <%= release.name || release.tag_name %> 
+                    (<%= new Date(release.published_at).toLocaleDateString() %>)
+                  </summary>
+                  <div class="markdown-body"><%- release.body_html %></div>
+                </details>
+              <% }) %>
+            </div>
+          </details>
+        <% }) %>
+      </div>
+      <div class="sidebar">
+        <h2 id="repositories">Repositories</h2>
+        <hr>
+        <ul class="feedslist">
+          <% if (allReleases.length) { %>
+            <% allReleases.forEach(({ repo }) => { %>
+              <li>
+                <form method="POST" action="/remove-feed" onchange="this.submit()">
+                  <code class="feeds">
+                    <input type="checkbox" class="feedcheck" checked />
+                    <p class="feedtext"><%= repo %></p>
+                  </code>
+                  <input type="hidden" name="feedSlug" value="<%= repo %>" />
+                </form>
+              </li>
+            <% }) %>
+          <% } else { %>
+            <li><em>None yet</em></li>
+          <% } %>
+        </ul>
+      </div>
     </div>
     <div id="loadingOverlay" style="display: none;">  
       <div class="spinner"></div>

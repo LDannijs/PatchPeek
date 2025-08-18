@@ -43,24 +43,38 @@
     </div>
     <div class="layout">
       <div class="content">
-        <% allReleases.forEach(({ repo, releases, releaseCount, hasFlagged }) => { %>
+        <% if (errorMessage) { %>
+          <div class="banner">
+            <span><%= errorMessage %></span>
+            <button
+              class="dismiss-button"
+              onclick="window.location='/'"
+              aria-label="Dismiss error message"
+            >&times;</button>
+          </div>
+        <% } %>
+
+        <% allReleases.forEach(feed => { %>
           <details class="wrapper">
             <summary class="repoMain">
-              <img class="avatar" src="https://github.com/<%= repo.split('/')[0] %>.png"/>
-              <p class="project"><%= repo %></p>
-              <p class="releaseCount <%= hasFlagged ? 'flagged' : '' %>">
-                  <%= releaseCount %> releases
-                </p>
+              <img class="avatar" src="https://github.com/<%= feed.repo.split('/')[0] %>.png"/>
+              <p class="project"><%= feed.repo %></p>
+              <p class="releaseCount <%= feed.hasFlagged ? 'flagged' : '' %>">
+                <%= feed.releaseCount %> releases
+              </p>
             </summary>
             <div class="releaseDiv">
-              <% releases.forEach(release => { %>
+              <% feed.releases.forEach(release => { %>
                 <details class="release <%= release.flagged ? 'flagged' : '' %>">
                   <summary class="<%= release.flagged ? 'flagged' : '' %>">
-                    <a class="releaseName <%= release.flagged ? 'flagged' : '' %>" href="<%= release.html_url %>"><%= release.name || release.tag_name %> 
-                    (<%= new Date(release.published_at).toLocaleDateString() %>)
+                    <a class="releaseName <%= release.flagged ? 'flagged' : '' %>" href="<%= release.html_url %>">
+                      <%= release.name || release.tag_name %> 
+                      (<%= new Date(release.published_at).toLocaleDateString() %>)
                     </a>
                   </summary>
-                  <div class="markdown-body <%= release.flagged ? 'flagged' : '' %>"><%- release.body_html %></div>
+                  <div class="markdown-body <%= release.flagged ? 'flagged' : '' %>">
+                    <%- release.body_html %>
+                  </div>
                 </details>
               <% }) %>
             </div>
@@ -81,14 +95,15 @@
         </form>
         <hr>
         <ul class="reposlist">
-          <% if (allReleases.length) { %>
-            <% allReleases.forEach(({ repo }) => { %>
+          <% if (repoList.length) { %>
+            <% repoList.forEach(repo => { %>
               <li>
                 <form method="POST" action="/remove-repo" onchange="this.submit()">
                   <code class="repos">
-                    <input type="checkbox" class="repocheck" checked />
+                    <input type="checkbox" name="repoSlug" value="<%= repo %>" class="repocheck" checked />
                     <p class="repotext"><%= repo %></p>
                   </code>
+                  <input type="hidden" name="repoSlug" value="<%= repo %>" />
                 </form>
               </li>
             <% }) %>

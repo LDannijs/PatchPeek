@@ -106,14 +106,20 @@ async function refreshAllReleases() {
   }
 }
 
+function renderIndex(res, { errorMessage } = {}) {
+  res.render("index", {
+    allReleases: cachedData,
+    daysWindow: config.daysWindow,
+    repoList: config.repos.slice().sort((a, b) => a.localeCompare(b)),
+    errorMessage,
+  });
+}
+
 app.get("/", async (req, res) => {
   if (cachedData.length === 0) {
     await refreshAllReleases();
   }
-  res.render("index", {
-    allReleases: cachedData,
-    daysWindow: config.daysWindow,
-  });
+  renderIndex(res);
 });
 
 app.get("/debug", (req, res) => {
@@ -121,14 +127,28 @@ app.get("/debug", (req, res) => {
 });
 
 app.post("/add-repo", async (req, res) => {
-  const newRepo = req.body.repoSlug.trim();
+  let repoInput = req.body.repoSlug.trim();
 
-  if (!config.repos.includes(newRepo)) {
-    config.repos.push(newRepo);
-    await saveConfig();
+  const githubUrlMatch = repoInput.match(
+    /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^\/]+)\/([^\/]+)(?:\/.*)?$/
+  );
+  if (githubUrlMatch) {
+    repoInput = `${githubUrlMatch[1]}/${githubUrlMatch[2]}`;
   }
-  await refreshAllReleases();
-  res.redirect("/");
+
+  if (config.repos.includes(repoInput))
+    return renderIndex(res, { errorMessage: "Repository already added" });
+
+  try {
+    await fetchReleases(repoInput);
+    config.repos.push(repoInput);
+    await saveConfig(config);
+    return res.redirect("/");
+  } catch (err) {
+    return renderIndex(res, {
+      errorMessage: `Failed to fetch repository: ${err.message}`,
+    });
+  }
 });
 
 app.post("/remove-repo", async (req, res) => {
@@ -136,8 +156,6 @@ app.post("/remove-repo", async (req, res) => {
   config.repos = config.repos.filter((r) => r !== repoToRemove);
   await saveConfig();
   cachedData = cachedData.filter((item) => item.repo !== repoToRemove);
-
-  await refreshAllReleases();
   res.redirect("/");
 });
 
@@ -155,11 +173,10 @@ app.post("/update-token", async (req, res) => {
   const token = req.body.githubToken?.trim();
   const validFormat = !token || /^github_pat_|^ghp_/.test(token);
   if (!validFormat) {
-    return res
-      .status(400)
-      .send(
-        "Invalid GitHub token format. It should start with 'github_pat_' or 'ghp_'."
-      );
+    return renderIndex(res, {
+      errorMessage:
+        "Invalid GitHub token format. It should start with 'github_pat_' or 'ghp_'.",
+    });
   }
   config.githubToken = token;
   await saveConfig();
@@ -171,6 +188,6 @@ app.post("/update-token", async (req, res) => {
   await refreshAllReleases();
   setInterval(refreshAllReleases, 60 * 60 * 1000); // 1 hour
   app.listen(3000, () =>
-    console.log(`Server running at http://localhost:3000 \n`)
+    console.log(`\nServer running at http://localhost:3000 \n`)
   );
 })();

@@ -1,6 +1,7 @@
 # 👀 PatchPeek
 
-this branch serves as me trying to manually rewrite the backend. itll stay barebones for a bit.
+> [!NOTE]
+> this branch serves as me trying to manually rewrite the backend. it'll stay barebones for a bit.
 
 PatchPeek fetches the changelog of GitHub releases with the GitHub API, while checking for any potential breaking changes and puts it into a clean interface.
 
@@ -12,14 +13,12 @@ This project came to fruition from me wanting to quickly know if any updates I w
 
 - This app is intended to be visited once a month, which is when I personally update all my containers, but you **can** change the days to look back for. While it does work if you enter 365 days for example, be aware of heavy GitHub API usage and longer load times. Just so you know, I am not condoning usage this far back, as i have not tested the rigidity of it.
 
-- The app pulls releases from the GitHub API every 1 hour, and caches it based on the `If-None-Match` request header. This is to use less requests from the API then needed. Considering it only uses the API once every hour, running the app without a GitHub token should provide enough requests for your needs (but it is recommended to add one).
+- The app pulls releases from the GitHub API every 1 hour, which should provide enough requests for your needs without a GitHub token (but it is recommended to add one).
 
 ## Roadmap
 
 - Repo delete confirmation (confirm element)
-- Allow full repo url
 - 24h vs 12h switch
-- Redirect to github release page
 - Search function
 - Create logo?
 

@@ -4,7 +4,6 @@ import fs from "fs/promises";
 
 const app = express();
 const configPath = path.resolve("./data/config.json");
-let cachedData = [];
 
 app.set("view engine", "ejs");
 app.set("views", path.resolve("./views"));
@@ -12,6 +11,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.resolve("./public")));
 
 let config = { repos: [], daysWindow: 31, githubToken: "" };
+let cachedData = [];
 
 const keywords = [
   "breaking change",
@@ -23,8 +23,7 @@ const keywords = [
 async function loadConfig() {
   try {
     await fs.mkdir(path.dirname(configPath), { recursive: true });
-    const raw = await fs.readFile(configPath, "utf-8");
-    config = JSON.parse(raw);
+    config = JSON.parse(await fs.readFile(configPath, "utf-8"));
   } catch {
     await saveConfig();
   }
@@ -34,10 +33,15 @@ async function saveConfig() {
   await fs.writeFile(configPath, JSON.stringify(config, null, 2));
 }
 
+function cutoffDate(days) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return cutoff;
+}
+
 async function fetchReleases(repo, daysWindow = config.daysWindow) {
   const allReleases = [];
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - daysWindow);
+  const cutoff = cutoffDate(daysWindow);
 
   for (let page = 1; ; page++) {
     const res = await fetch(
@@ -53,7 +57,7 @@ async function fetchReleases(repo, daysWindow = config.daysWindow) {
     );
 
     console.log(
-      `${repo}: ${res.status} | Remaining requests: ${res.headers.get("x-ratelimit-remaining")}/${res.headers.get("x-ratelimit-limit")}`
+      `${repo}: ${res.status} | Remaining: ${res.headers.get("x-ratelimit-remaining")}/${res.headers.get("x-ratelimit-limit")}`
     );
 
     if (!res.ok) throw new Error(`GitHub API error (${repo}): ${res.status}`);
@@ -65,8 +69,8 @@ async function fetchReleases(repo, daysWindow = config.daysWindow) {
       if (r.draft || r.prerelease) continue;
       if (new Date(r.published_at) < cutoff) return allReleases;
 
-      const lowerBody = (r.body_html || "").toLowerCase();
-      r.flagged = keywords.some((kw) => lowerBody.includes(kw));
+      const body = (r.body_html || "").toLowerCase();
+      r.flagged = keywords.some((kw) => body.includes(kw));
 
       allReleases.push(r);
     }
@@ -75,66 +79,70 @@ async function fetchReleases(repo, daysWindow = config.daysWindow) {
   return allReleases;
 }
 
+function sortReleases(releases) {
+  return releases.sort((a, b) => {
+    if (a.flagged && !b.flagged) return -1;
+    if (!a.flagged && b.flagged) return 1;
+    return new Date(b.published_at) - new Date(a.published_at);
+  });
+}
+
 async function refreshAllReleases() {
   console.log("Refreshing GitHub releases...");
-  try {
-    const results = await Promise.all(
-      config.repos.map(async (repo) => {
+  const errors = [];
+
+  const results = await Promise.all(
+    config.repos.map(async (repo) => {
+      try {
         const releases = await fetchReleases(repo);
-        releases.sort((a, b) => {
-          if (a.flagged && !b.flagged) return -1;
-          if (!a.flagged && b.flagged) return 1;
-          return new Date(b.published_at) - new Date(a.published_at);
-        });
-
-        const releaseCount = releases.length;
-        const hasFlagged = releases.some((r) => r.flagged);
-
         return {
           repo,
-          releases,
-          releaseCount,
-          hasFlagged,
+          releases: sortReleases(releases),
+          releaseCount: releases.length,
+          hasFlagged: releases.some((r) => r.flagged),
         };
-      })
-    );
-    cachedData = results
-      .filter((r) => r.releaseCount > 0)
-      .sort((a, b) => b.releaseCount - a.releaseCount);
-  } catch (err) {
-    console.error("Failed to refresh GitHub releases:", err.message);
-  }
+      } catch (err) {
+        console.error(`Failed to refresh ${repo}: ${err.message}`);
+        errors.push(`${repo} → ${err.message}`);
+        return null;
+      }
+    })
+  );
+
+  cachedData = results
+    .filter((r) => r && r.releaseCount > 0)
+    .sort((a, b) => b.releaseCount - a.releaseCount);
+
+  refreshAllReleases.lastErrors = errors;
 }
 
 function renderIndex(res, { errorMessage } = {}) {
   res.render("index", {
     allReleases: cachedData,
     daysWindow: config.daysWindow,
-    repoList: config.repos.slice().sort((a, b) => a.localeCompare(b)),
-    errorMessage,
+    repoList: [...config.repos].sort((a, b) => a.localeCompare(b)),
+    errorMessage:
+      errorMessage || refreshAllReleases.lastErrors?.join("; ") || null,
   });
 }
 
+function normalizeRepoSlug(input) {
+  const trimmed = input.trim();
+  const match = trimmed.match(
+    /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^\/]+)\/([^\/]+)(?:\/.*)?$/
+  );
+  return match ? `${match[1]}/${match[2]}` : trimmed;
+}
+
 app.get("/", async (req, res) => {
-  if (cachedData.length === 0) {
-    await refreshAllReleases();
-  }
+  if (cachedData.length === 0) await refreshAllReleases();
   renderIndex(res);
 });
 
-app.get("/debug", (req, res) => {
-  res.json(cachedData);
-});
+app.get("/debug", (req, res) => res.json(cachedData));
 
 app.post("/add-repo", async (req, res) => {
-  let repoInput = req.body.repoSlug.trim();
-
-  const githubUrlMatch = repoInput.match(
-    /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^\/]+)\/([^\/]+)(?:\/.*)?$/
-  );
-  if (githubUrlMatch) {
-    repoInput = `${githubUrlMatch[1]}/${githubUrlMatch[2]}`;
-  }
+  const repoInput = normalizeRepoSlug(req.body.repoSlug);
 
   if (config.repos.includes(repoInput))
     return renderIndex(res, { errorMessage: "Repository already added" });
@@ -142,20 +150,18 @@ app.post("/add-repo", async (req, res) => {
   try {
     await fetchReleases(repoInput);
     config.repos.push(repoInput);
-    await saveConfig(config);
-    return res.redirect("/");
+    await saveConfig();
+    res.redirect("/");
   } catch (err) {
-    return renderIndex(res, {
-      errorMessage: `Failed to fetch repository: ${err.message}`,
-    });
+    renderIndex(res, { errorMessage: `Failed to fetch: ${err.message}` });
   }
 });
 
 app.post("/remove-repo", async (req, res) => {
-  const repoToRemove = req.body.repoSlug.trim();
-  config.repos = config.repos.filter((r) => r !== repoToRemove);
+  const repo = req.body.repoSlug.trim();
+  config.repos = config.repos.filter((r) => r !== repo);
+  cachedData = cachedData.filter((r) => r.repo !== repo);
   await saveConfig();
-  cachedData = cachedData.filter((item) => item.repo !== repoToRemove);
   res.redirect("/");
 });
 
@@ -171,8 +177,7 @@ app.post("/update-days", async (req, res) => {
 
 app.post("/update-token", async (req, res) => {
   const token = req.body.githubToken?.trim();
-  const validFormat = !token || /^github_pat_|^ghp_/.test(token);
-  if (!validFormat) {
+  if (token && !/^github_pat_|^ghp_/.test(token)) {
     return renderIndex(res, {
       errorMessage:
         "Invalid GitHub token format. It should start with 'github_pat_' or 'ghp_'.",
@@ -188,6 +193,6 @@ app.post("/update-token", async (req, res) => {
   await refreshAllReleases();
   setInterval(refreshAllReleases, 60 * 60 * 1000); // 1 hour
   app.listen(3000, () =>
-    console.log(`\nServer running at http://localhost:3000 \n`)
+    console.log(`\nServer running at http://localhost:3000\n`)
   );
 })();

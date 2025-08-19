@@ -15,6 +15,7 @@ app.use(express.static(path.resolve("./public")));
 let config = { repos: [], daysWindow: 31, githubToken: "" };
 let cachedData = [];
 let lastUpdateTime = null;
+let rateLimited = false;
 
 const keywords = [
   "breaking change",
@@ -62,6 +63,14 @@ async function fetchReleases(repo, daysWindow = config.daysWindow) {
     console.log(
       `${repo}: ${res.status} | Remaining: ${res.headers.get("x-ratelimit-remaining")}/${res.headers.get("x-ratelimit-limit")}`
     );
+
+    if (
+      res.status === 403 &&
+      res.headers.get("x-ratelimit-remaining") === "0"
+    ) {
+      rateLimited = true;
+      return allReleases;
+    }
 
     if (!res.ok) throw new Error(`GitHub API error (${repo}): ${res.status}`);
 
@@ -138,7 +147,11 @@ function renderIndex(res, { errorMessage } = {}) {
     daysWindow: config.daysWindow,
     repoList: [...config.repos].sort((a, b) => a.localeCompare(b)),
     errorMessage:
-      errorMessage || refreshAllReleases.lastErrors?.join("; ") || null,
+      errorMessage ||
+      (rateLimited
+        ? "Rate Limited. Either wait or use a GitHub token."
+        : refreshAllReleases.lastErrors?.join("; ")) ||
+      null,
     lastUpdateTime,
   });
 }

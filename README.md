@@ -17,8 +17,6 @@ This project came to fruition from me wanting to quickly know if any updates I w
 
 ## Roadmap
 
-- Repo delete confirmation (confirm element)
-- 24h vs 12h switch
 - Search function
 - Create logo?
 

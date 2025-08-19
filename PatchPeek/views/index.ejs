@@ -14,6 +14,7 @@
   <body>
     <div class="header">
       <h1 class="title">👀 PatchPeek</h1>
+      <p class="lastUpdated">Last updated: <%= lastUpdateTime %></p>
       <details class="settings">
         <summary class="settingsSummary">
           <p class="settingsTitle" >Settings</p>
@@ -65,7 +66,7 @@
             </summary>
             <div class="releaseDiv">
               <% feed.releases.forEach(release => { %>
-                <details class="release <%= release.flagged ? 'flagged' : '' %>">
+                <details open class="release <%= release.flagged ? 'flagged' : '' %>">
                   <summary class="<%= release.flagged ? 'flagged' : '' %>">
                     <a class="releaseName <%= release.flagged ? 'flagged' : '' %>" href="<%= release.html_url %>">
                       <%= release.name || release.tag_name %> 
@@ -98,9 +99,16 @@
           <% if (repoList.length) { %>
             <% repoList.forEach(repo => { %>
               <li>
-                <form method="POST" action="/remove-repo" onchange="this.submit()">
+                <form method="POST" action="/remove-repo">
                   <code class="repos">
-                    <input type="checkbox" name="repoSlug" value="<%= repo %>" class="repocheck" checked />
+                    <input
+                      type="checkbox"
+                      name="repoSlug"
+                      value="<%= repo %>"
+                      class="repocheck"
+                      checked
+                      onclick="if(confirm('Are you sure you want to remove this repository?')) this.form.submit(); else this.checked = true;"
+                    />
                     <p class="repotext"><%= repo %></p>
                   </code>
                   <input type="hidden" name="repoSlug" value="<%= repo %>" />

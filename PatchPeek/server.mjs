@@ -1,9 +1,11 @@
 import express from "express";
 import path from "path";
 import fs from "fs/promises";
+import pLimit from "p-limit";
 
 const app = express();
 const configPath = path.resolve("./data/config.json");
+const limit = pLimit(5);
 
 app.set("view engine", "ejs");
 app.set("views", path.resolve("./views"));
@@ -12,6 +14,7 @@ app.use(express.static(path.resolve("./public")));
 
 let config = { repos: [], daysWindow: 31, githubToken: "" };
 let cachedData = [];
+let lastUpdateTime = null;
 
 const keywords = [
   "breaking change",
@@ -90,30 +93,43 @@ function sortReleases(releases) {
 async function refreshAllReleases() {
   console.log("Refreshing GitHub releases...");
   const errors = [];
+  const cutoff = cutoffDate(config.daysWindow);
 
   const results = await Promise.all(
-    config.repos.map(async (repo) => {
-      try {
-        const releases = await fetchReleases(repo);
-        return {
-          repo,
-          releases: sortReleases(releases),
-          releaseCount: releases.length,
-          hasFlagged: releases.some((r) => r.flagged),
-        };
-      } catch (err) {
-        console.error(`Failed to refresh ${repo}: ${err.message}`);
-        errors.push(`${repo} → ${err.message}`);
-        return null;
-      }
-    })
+    config.repos.map((repo) =>
+      limit(async () => {
+        try {
+          const releases = await fetchReleases(repo);
+          return {
+            repo,
+            releases: sortReleases(releases),
+            releaseCount: releases.length,
+            hasFlagged: releases.some((r) => r.flagged),
+          };
+        } catch (err) {
+          console.error(`Failed to refresh ${repo}: ${err.message}`);
+          errors.push(`${repo} → ${err.message}`);
+          return null;
+        }
+      })
+    )
   );
 
   cachedData = results
     .filter((r) => r && r.releaseCount > 0)
     .sort((a, b) => b.releaseCount - a.releaseCount);
 
+  cachedData.forEach((feed) => {
+    feed.releases = feed.releases.filter(
+      (r) => new Date(r.published_at) >= cutoff
+    );
+    feed.releaseCount = feed.releases.length;
+    feed.hasFlagged = feed.releases.some((r) => r.flagged);
+  });
+  cachedData = cachedData.filter((feed) => feed.releaseCount > 0);
+
   refreshAllReleases.lastErrors = errors;
+  lastUpdateTime = new Date().toLocaleString();
 }
 
 function renderIndex(res, { errorMessage } = {}) {
@@ -123,6 +139,7 @@ function renderIndex(res, { errorMessage } = {}) {
     repoList: [...config.repos].sort((a, b) => a.localeCompare(b)),
     errorMessage:
       errorMessage || refreshAllReleases.lastErrors?.join("; ") || null,
+    lastUpdateTime,
   });
 }
 

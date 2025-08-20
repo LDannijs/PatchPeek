@@ -83,7 +83,7 @@ body {
   font-size: 1.1em;
   padding: 15px;
   font-weight: 700;
-  height: 60px;
+  min-height: 60px;
   color: #000000;
   background-color: #ffd4d1;
   box-sizing: border-box;
@@ -91,8 +91,17 @@ body {
   align-items: center;
 }
 
+.errorMessage {
+  display: flex;
+  flex-direction: column;
+}
+
 .banner span {
   line-height: 2px;
+}
+
+.banner p {
+  margin: 5px;
 }
 
 .dismiss-button {

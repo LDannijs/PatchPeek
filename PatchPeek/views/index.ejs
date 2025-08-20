@@ -44,14 +44,23 @@
     </div>
     <div class="layout">
       <div class="content">
-        <% if (errorMessage) { %>
+        <% if (errorMessage.length) { %>
           <div class="banner">
-            <span><%= errorMessage %></span>
+            <div class="errorMessage">
+              <% errorMessage.forEach(err => { %>
+                <p><%= err %></p>
+              <% }) %>
+            </div>
             <button
               class="dismiss-button"
               onclick="window.location='/'"
               aria-label="Dismiss error message"
             >&times;</button>
+          </div>
+        <% } %>
+        <% if (rateLimited) { %>
+          <div class="banner">
+            <p>Rate limit exceeded. Either wait or use a GitHub token.</p>
           </div>
         <% } %>
 

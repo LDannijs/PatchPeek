@@ -99,44 +99,38 @@ function sortReleases(releases) {
   });
 }
 
-async function refreshAllReleases() {
-  console.log("Refreshing GitHub releases...");
-  const errors = [];
+async function refreshAllReleases(reposToRefresh = config.repos) {
+  console.log(`Refreshing ${reposToRefresh.length} repositories`);
   const cutoff = cutoffDate(config.daysWindow);
+  const errors = [];
 
-  const results = await Promise.all(
-    config.repos.map((repo) =>
+  await Promise.all(
+    reposToRefresh.map((repo) =>
       limit(async () => {
         try {
-          const releases = await fetchReleases(repo);
-          return {
+          const releases = (await fetchReleases(repo)).filter(
+            (r) => new Date(r.published_at) >= cutoff
+          );
+          const entry = {
             repo,
             releases: sortReleases(releases),
             releaseCount: releases.length,
             hasFlagged: releases.some((r) => r.flagged),
           };
+
+          cachedData = [
+            ...cachedData.filter((f) => f.repo !== repo),
+            ...(entry.releaseCount > 0 ? [entry] : []),
+          ];
         } catch (err) {
           console.error(`Failed to refresh ${repo}: ${err.message}`);
-          errors.push(`${repo} → ${err.message}`);
-          return null;
+          errors.push(`${err.message}`);
         }
       })
     )
   );
 
-  cachedData = results
-    .filter((r) => r && r.releaseCount > 0)
-    .sort((a, b) => b.releaseCount - a.releaseCount);
-
-  cachedData.forEach((feed) => {
-    feed.releases = feed.releases.filter(
-      (r) => new Date(r.published_at) >= cutoff
-    );
-    feed.releaseCount = feed.releases.length;
-    feed.hasFlagged = feed.releases.some((r) => r.flagged);
-  });
-  cachedData = cachedData.filter((feed) => feed.releaseCount > 0);
-
+  cachedData.sort((a, b) => b.releaseCount - a.releaseCount);
   refreshAllReleases.lastErrors = errors;
   lastUpdateTime = new Date().toLocaleString();
 }
@@ -146,12 +140,8 @@ function renderIndex(res, { errorMessage } = {}) {
     allReleases: cachedData,
     daysWindow: config.daysWindow,
     repoList: [...config.repos].sort((a, b) => a.localeCompare(b)),
-    errorMessage:
-      errorMessage ||
-      (rateLimited
-        ? "Rate Limited. Either wait or use a GitHub token."
-        : refreshAllReleases.lastErrors?.join("; ")) ||
-      null,
+    errorMessage: errorMessage || refreshAllReleases.lastErrors || null,
+    rateLimited,
     lastUpdateTime,
   });
 }
@@ -178,7 +168,7 @@ app.post("/add-repo", async (req, res) => {
     return renderIndex(res, { errorMessage: "Repository already added" });
 
   try {
-    await fetchReleases(repoInput);
+    await refreshAllReleases([repoInput]);
     config.repos.push(repoInput);
     await saveConfig();
     res.redirect("/");
@@ -191,6 +181,11 @@ app.post("/remove-repo", async (req, res) => {
   const repo = req.body.repoSlug.trim();
   config.repos = config.repos.filter((r) => r !== repo);
   cachedData = cachedData.filter((r) => r.repo !== repo);
+  if (refreshAllReleases.lastErrors?.length) {
+    refreshAllReleases.lastErrors = refreshAllReleases.lastErrors.filter(
+      (err) => !err.startsWith(repo)
+    );
+  }
   await saveConfig();
   res.redirect("/");
 });

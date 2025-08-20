@@ -133,6 +133,7 @@ async function refreshAllReleases(reposToRefresh = config.repos) {
   cachedData.sort((a, b) => b.releaseCount - a.releaseCount);
   refreshAllReleases.lastErrors = errors;
   lastUpdateTime = new Date().toLocaleString();
+  console.log(" ");
 }
 
 function renderIndex(res, { errorMessage } = {}) {
@@ -218,6 +219,6 @@ app.post("/update-token", async (req, res) => {
   await refreshAllReleases();
   setInterval(refreshAllReleases, 60 * 60 * 1000); // 1 hour
   app.listen(3000, () =>
-    console.log(`\nServer running at http://localhost:3000\n`)
+    console.log(`Server running at http://localhost:3000\n`)
   );
 })();

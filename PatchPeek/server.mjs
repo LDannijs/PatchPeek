@@ -91,14 +91,6 @@ async function fetchReleases(repo, daysWindow = config.daysWindow) {
   return allReleases;
 }
 
-function sortReleases(releases) {
-  return releases.sort((a, b) => {
-    if (a.flagged && !b.flagged) return -1;
-    if (!a.flagged && b.flagged) return 1;
-    return new Date(b.published_at) - new Date(a.published_at);
-  });
-}
-
 async function refreshAllReleases(reposToRefresh = config.repos) {
   console.log(`Refreshing ${reposToRefresh.length} repositories`);
   const cutoff = cutoffDate(config.daysWindow);
@@ -111,9 +103,16 @@ async function refreshAllReleases(reposToRefresh = config.repos) {
           const releases = (await fetchReleases(repo)).filter(
             (r) => new Date(r.published_at) >= cutoff
           );
+
+          releases.sort((a, b) => {
+            if (a.flagged && !b.flagged) return -1;
+            if (!a.flagged && b.flagged) return 1;
+            return new Date(b.published_at) - new Date(a.published_at);
+          });
+
           const entry = {
             repo,
-            releases: sortReleases(releases),
+            releases,
             releaseCount: releases.length,
             hasFlagged: releases.some((r) => r.flagged),
           };

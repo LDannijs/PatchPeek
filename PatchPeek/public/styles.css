@@ -214,16 +214,25 @@ summary {
   -moz-user-select: none;
 }
 
+summary.flagged,
+details.flagged {
+  background: #542c2c !important;
+}
+
 summary:hover {
-  background: #3a3a3a;
+  background: #222222;
 }
 
 summary:hover.flagged {
-  background: #542c2c !important;
+  background: #683636 !important;
 }
 
 summary::-webkit-details-marker {
   display: none;
+}
+
+.repoMain:hover {
+  background: #414141;
 }
 
 .repoMain img.avatar {
@@ -255,18 +264,12 @@ summary::-webkit-details-marker {
   font-weight: 700;
 }
 
-.markdown-body.flagged,
-.release.flagged,
-summary.flagged {
-  background: #3c2020 !important;
-}
-
 .releaseDiv {
   padding: 0 15px 1px;
 }
 
 details.release {
-  background: #222222;
+  background: #0a0a0a;
   margin-bottom: 1rem;
 }
 
@@ -280,8 +283,11 @@ a.releaseName:hover {
 
 .markdown-body {
   padding: 15px;
+  margin: 0px 10px 10px !important;
+  width: stretch;
   background: #222222 !important;
   border-radius: 15px;
+  display: inline-block;
 }
 
 .markdown-body h1,

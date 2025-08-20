@@ -82,7 +82,7 @@
                       (<%= new Date(release.published_at).toLocaleDateString() %>)
                     </a>
                   </summary>
-                  <div class="markdown-body <%= release.flagged ? 'flagged' : '' %>">
+                  <div class="markdown-body">
                     <%- release.body_html %>
                   </div>
                 </details>

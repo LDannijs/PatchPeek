@@ -14,7 +14,7 @@
   <body>
     <div class="header">
       <h1 class="title">👀 PatchPeek</h1>
-      <p class="lastUpdated">Last updated: <%= new Date(lastUpdateTime).toLocaleString() %></p>
+      <p class="lastUpdated">Last updated: <%= lastUpdateTime %></p>
       <details class="settings">
         <summary class="settingsSummary">
           <p class="settingsTitle" >Settings</p>
@@ -44,23 +44,13 @@
     </div>
     <div class="layout">
       <div class="content">
-        <% if (rateLimitHit && isAuthenticated) { %>
-        <p class="banner">
-          🚨 GitHub API rate limit exceeded for authenticated requests.
-        </p>
-        <% } else if (rateLimitHit && !isAuthenticated) { %>
-        <p class="banner">
-          🚨 GitHub API rate limit exceeded for unauthenticated requests. Please add a GitHub token to increase your quota.
-        </p>
-        <% } %>
-        <% if (now < lastUpdateTime) { %>
+        <% if (errorMessage.length) { %>
           <div class="banner">
-            New content available. <a href="/">Refresh</a>
-          </div>
-        <% } %>
-        <% if (errorMessage) { %>
-          <div class="banner">
-            <span><%= errorMessage %></span>
+            <div class="errorMessage">
+              <% errorMessage.forEach(err => { %>
+                <p><%= err %></p>
+              <% }) %>
+            </div>
             <button
               class="dismiss-button"
               onclick="window.location='/'"
@@ -68,28 +58,33 @@
             >&times;</button>
           </div>
         <% } %>
+        <% if (rateLimited) { %>
+          <div class="banner">
+            <p>Rate limit exceeded. Either wait or use a GitHub token.</p>
+          </div>
+        <% } %>
 
-        <% feedsWithReleases.forEach(feed => { %>
+        <% allReleases.forEach(repo => { %>
           <details class="wrapper">
-            <summary class="feedMain">
-              <img class="avatar" src="https://github.com/<%= feed.project.split('/')[0] %>.png" alt="<%= feed.project %>" />
-              <p class="project"><%= feed.project %></p>
-              <p class="releaseCount <%= feed.breakingCount ? 'flagged' : '' %>">
-                <%= feed.releaseCount %> releases<%= feed.breakingCount ? ' 🚨' : '' %>
+            <summary class="repoMain">
+              <img class="avatar" src="https://github.com/<%= repo.repo.split('/')[0] %>.png"/>
+              <p class="project"><%= repo.repo %></p>
+              <p class="releaseCount <%= repo.hasFlagged ? 'flagged' : '' %>">
+                <%= repo.releaseCount %> releases
               </p>
             </summary>
             <div class="releaseDiv">
-              <% 
-                const breaking = feed.releases.filter(release => release.flagged);
-                const normal = feed.releases.filter(release => !release.flagged);
-                [...breaking, ...normal].forEach(release => { 
-              %>
-                <details class="release <%= release.flagged ? 'flagged' : '' %>" open>
+              <% repo.releases.forEach(release => { %>
+                <details open class="release <%= release.flagged ? 'flagged' : '' %>">
                   <summary class="<%= release.flagged ? 'flagged' : '' %>">
-                    <%= release.title %> (<%= release.date %>)
-                    <% if (release.flagged) { %><span>🚨</span><% } %>
+                    <a class="releaseName <%= release.flagged ? 'flagged' : '' %>" href="<%= release.html_url %>">
+                      <%= release.name || release.tag_name %> 
+                      (<%= new Date(release.published_at).toLocaleDateString() %>)
+                    </a>
                   </summary>
-                  <div class="markdown-body <%= release.flagged ? 'flagged' : '' %>"><%- release.html %></div>
+                  <div class="markdown-body">
+                    <%- release.body_html %>
+                  </div>
                 </details>
               <% }) %>
             </div>
@@ -98,27 +93,34 @@
       </div>
       <div class="sidebar">
         <h2 id="repositories">Repositories</h2>
-        <form method="POST" action="/add-feed" class="addfeed">
-          <label for="feedSlug">Enter GitHub repository slug:</label>
+        <form method="POST" action="/add-repo" class="addrepo">
+          <label for="repoSlug">Enter GitHub repository:</label>
           <input
-            id="feedSlug"
-            name="feedSlug"
+            id="repoSlug"
+            name="repoSlug"
             type="text"
-            placeholder="user/repo"
+            placeholder="github.com/... OR user/repo"
             required
           />
         </form>
         <hr>
-        <ul class="feedslist">
-          <% if (feedsList.length) { %>
-            <% feedsList.forEach(feed => { %>
+        <ul class="reposlist">
+          <% if (repoList.length) { %>
+            <% repoList.forEach(repo => { %>
               <li>
-                <form method="POST" action="/remove-feed" onchange="this.submit()">
-                  <code class="feeds">
-                    <input type="checkbox" class="feedcheck" checked />
-                    <p class="feedtext"><%= feed %></p>
+                <form method="POST" action="/remove-repo">
+                  <code class="repos">
+                    <input
+                      type="checkbox"
+                      name="repoSlug"
+                      value="<%= repo %>"
+                      class="repocheck"
+                      checked
+                      onclick="if(confirm('Are you sure you want to remove this repository?')) this.form.submit(); else this.checked = true;"
+                    />
+                    <p class="repotext"><%= repo %></p>
                   </code>
-                  <input type="hidden" name="feedSlug" value="<%= feed %>" />
+                  <input type="hidden" name="repoSlug" value="<%= repo %>" />
                 </form>
               </li>
             <% }) %>

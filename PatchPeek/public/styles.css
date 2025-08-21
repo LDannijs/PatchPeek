@@ -83,7 +83,7 @@ body {
   font-size: 1.1em;
   padding: 15px;
   font-weight: 700;
-  height: 60px;
+  min-height: 60px;
   color: #000000;
   background-color: #ffd4d1;
   box-sizing: border-box;
@@ -91,8 +91,17 @@ body {
   align-items: center;
 }
 
+.errorMessage {
+  display: flex;
+  flex-direction: column;
+}
+
 .banner span {
   line-height: 2px;
+}
+
+.banner p {
+  margin: 5px;
 }
 
 .dismiss-button {
@@ -205,19 +214,28 @@ summary {
   -moz-user-select: none;
 }
 
+summary.flagged,
+details.flagged {
+  background: #542c2c !important;
+}
+
 summary:hover {
-  background: #3a3a3a;
+  background: #222222;
 }
 
 summary:hover.flagged {
-  background: #542c2c !important;
+  background: #683636 !important;
 }
 
 summary::-webkit-details-marker {
   display: none;
 }
 
-.feedMain img.avatar {
+.repoMain:hover {
+  background: #3a3a3a;
+}
+
+.repoMain img.avatar {
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -257,14 +275,30 @@ summary.flagged {
 }
 
 details.release {
-  background: #222222;
+  background: #0a0a0a;
   margin-bottom: 1rem;
+}
+
+a.releaseName {
+  color: #ffffff;
+}
+
+a.releaseName:hover {
+  color: #c3ceff;
 }
 
 .markdown-body {
   padding: 15px;
+  margin: 0px 10px 10px !important;
+  width: stretch;
   background: #222222 !important;
   border-radius: 15px;
+  display: inline-block;
+}
+
+.markdown-body h1,
+.markdown-body h2 {
+  border-bottom-color: #5d5d5db3 !important;
 }
 
 .markdown-body h1,
@@ -274,7 +308,7 @@ details.release {
 
 /* === SIDEBAR SECTION === */
 
-.addfeed {
+.addrepo {
   padding: 25px 0 5px;
 }
 
@@ -294,7 +328,7 @@ input[type="number"] {
   color: #e0e0e0;
 }
 
-#feedSlug,
+#repoSlug,
 #githubToken {
   width: stretch;
 }
@@ -317,13 +351,13 @@ h2 {
   line-height: 0.75;
 }
 
-.feedslist {
+.reposlist {
   list-style: none;
   padding-left: 0;
   margin: 0;
 }
 
-.feeds {
+.repos {
   display: flex;
   align-items: center;
   padding: 5px 0;
@@ -331,14 +365,14 @@ h2 {
   color: #ffffff;
 }
 
-.feedcheck {
+.repocheck {
   width: 20px;
   margin: 3px 0;
   height: 20px;
   cursor: pointer;
 }
 
-.feedtext {
+.repotext {
   margin: 0;
   padding-left: 5px;
 }

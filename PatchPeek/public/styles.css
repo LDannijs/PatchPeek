@@ -264,6 +264,12 @@ summary::-webkit-details-marker {
   font-weight: 700;
 }
 
+.markdown-body.flagged,
+.release.flagged,
+summary.flagged {
+  background: #3c2020 !important;
+}
+
 .releaseDiv {
   padding: 0 15px 1px;
 }
@@ -288,6 +294,11 @@ a.releaseName:hover {
   background: #222222 !important;
   border-radius: 15px;
   display: inline-block;
+}
+
+.markdown-body h1,
+.markdown-body h2 {
+  border-bottom-color: #5d5d5db3 !important;
 }
 
 .markdown-body h1,

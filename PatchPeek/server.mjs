@@ -61,7 +61,7 @@ async function fetchReleases(repo, daysWindow = config.daysWindow) {
     );
 
     console.log(
-      `${repo}: ${res.status} | Remaining: ${res.headers.get("x-ratelimit-remaining")}/${res.headers.get("x-ratelimit-limit")}`
+      `${repo}: ${res.status} | Remaining tokens: ${res.headers.get("x-ratelimit-remaining")}/${res.headers.get("x-ratelimit-limit")}`
     );
 
     if (

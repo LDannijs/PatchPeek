@@ -64,17 +64,17 @@
           </div>
         <% } %>
 
-        <% allReleases.forEach(feed => { %>
+        <% allReleases.forEach(repo => { %>
           <details class="wrapper">
             <summary class="repoMain">
-              <img class="avatar" src="https://github.com/<%= feed.repo.split('/')[0] %>.png"/>
-              <p class="project"><%= feed.repo %></p>
-              <p class="releaseCount <%= feed.hasFlagged ? 'flagged' : '' %>">
-                <%= feed.releaseCount %> releases
+              <img class="avatar" src="https://github.com/<%= repo.repo.split('/')[0] %>.png"/>
+              <p class="project"><%= repo.repo %></p>
+              <p class="releaseCount <%= repo.hasFlagged ? 'flagged' : '' %>">
+                <%= repo.releaseCount %> releases
               </p>
             </summary>
             <div class="releaseDiv">
-              <% feed.releases.forEach(release => { %>
+              <% repo.releases.forEach(release => { %>
                 <details open class="release <%= release.flagged ? 'flagged' : '' %>">
                   <summary class="<%= release.flagged ? 'flagged' : '' %>">
                     <a class="releaseName <%= release.flagged ? 'flagged' : '' %>" href="<%= release.html_url %>">
@@ -94,12 +94,12 @@
       <div class="sidebar">
         <h2 id="repositories">Repositories</h2>
         <form method="POST" action="/add-repo" class="addrepo">
-          <label for="repoSlug">Enter GitHub repository slug:</label>
+          <label for="repoSlug">Enter GitHub repository:</label>
           <input
             id="repoSlug"
             name="repoSlug"
             type="text"
-            placeholder="user/repo"
+            placeholder="github.com/... OR user/repo"
             required
           />
         </form>

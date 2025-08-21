@@ -91,7 +91,7 @@ async function fetchReleases(repo, daysWindow = config.daysWindow) {
   return allReleases;
 }
 
-async function refreshAllReleases(reposToRefresh = config.repos) {
+async function refreshReleases(reposToRefresh = config.repos) {
   console.log(`Refreshing ${reposToRefresh.length} repositories`);
   const cutoff = cutoffDate(config.daysWindow);
   const errors = [];
@@ -130,7 +130,7 @@ async function refreshAllReleases(reposToRefresh = config.repos) {
   );
 
   cachedData.sort((a, b) => b.releaseCount - a.releaseCount);
-  refreshAllReleases.lastErrors = errors;
+  refreshReleases.lastErrors = errors;
   lastUpdateTime = new Date().toLocaleString();
   console.log(" ");
 }
@@ -140,7 +140,7 @@ function renderIndex(res, { errorMessage } = {}) {
     allReleases: cachedData,
     daysWindow: config.daysWindow,
     repoList: [...config.repos].sort((a, b) => a.localeCompare(b)),
-    errorMessage: errorMessage || refreshAllReleases.lastErrors || null,
+    errorMessage: errorMessage || refreshReleases.lastErrors || null,
     rateLimited,
     lastUpdateTime,
   });
@@ -155,7 +155,7 @@ function normalizeRepoSlug(input) {
 }
 
 app.get("/", async (req, res) => {
-  if (cachedData.length === 0) await refreshAllReleases();
+  if (cachedData.length === 0) await refreshReleases();
   renderIndex(res);
 });
 
@@ -168,7 +168,7 @@ app.post("/add-repo", async (req, res) => {
     return renderIndex(res, { errorMessage: "Repository already added" });
 
   try {
-    await refreshAllReleases([repoInput]);
+    await refreshReleases([repoInput]);
     config.repos.push(repoInput);
     await saveConfig();
     res.redirect("/");
@@ -181,8 +181,8 @@ app.post("/remove-repo", async (req, res) => {
   const repo = req.body.repoSlug.trim();
   config.repos = config.repos.filter((r) => r !== repo);
   cachedData = cachedData.filter((r) => r.repo !== repo);
-  if (refreshAllReleases.lastErrors?.length) {
-    refreshAllReleases.lastErrors = refreshAllReleases.lastErrors.filter(
+  if (refreshReleases.lastErrors?.length) {
+    refreshReleases.lastErrors = refreshReleases.lastErrors.filter(
       (err) => !err.startsWith(repo)
     );
   }
@@ -195,7 +195,7 @@ app.post("/update-days", async (req, res) => {
   if (!isNaN(days) && days > 0) {
     config.daysWindow = days;
     await saveConfig();
-    await refreshAllReleases();
+    await refreshReleases();
   }
   res.redirect("/");
 });
@@ -215,8 +215,8 @@ app.post("/update-token", async (req, res) => {
 
 (async () => {
   await loadConfig();
-  await refreshAllReleases();
-  setInterval(refreshAllReleases, 60 * 60 * 1000); // 1 hour
+  await refreshReleases();
+  setInterval(refreshReleases, 60 * 60 * 1000); // 1 hour
   app.listen(3000, () =>
     console.log(`Server running at http://localhost:3000\n`)
   );

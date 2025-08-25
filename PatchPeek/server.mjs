@@ -169,7 +169,7 @@ app.post("/add-repo", async (req, res) => {
   const repoInput = normalizeRepoSlug(req.body.repoSlug);
 
   if (config.repos.includes(repoInput))
-    return renderIndex(res, { errorMessage: "Repository already added" });
+    return renderIndex(res, { errorMessage: ["Repository already added"] });
 
   try {
     await refreshReleases([repoInput]);
@@ -177,7 +177,7 @@ app.post("/add-repo", async (req, res) => {
     await saveConfig();
     res.redirect("/");
   } catch (err) {
-    renderIndex(res, { errorMessage: `Failed to fetch: ${err.message}` });
+    renderIndex(res, { errorMessage: [`Failed to fetch: ${err.message}`] });
   }
 });
 
@@ -208,8 +208,9 @@ app.post("/update-token", async (req, res) => {
   const token = req.body.githubToken?.trim();
   if (token && !/^github_pat_|^ghp_/.test(token)) {
     return renderIndex(res, {
-      errorMessage:
+      errorMessage: [
         "Invalid GitHub token format. It should start with 'github_pat_' or 'ghp_'.",
+      ],
     });
   }
   config.githubToken = token;

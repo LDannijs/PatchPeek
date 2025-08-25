@@ -72,6 +72,10 @@ async function fetchReleases(repo, daysWindow = config.daysWindow) {
       return allReleases;
     }
 
+    if (res.status === 404) {
+      throw new Error(`Repository "${repo}" does not exist or is private.`);
+    }
+
     if (!res.ok) throw new Error(`GitHub API error (${repo}): ${res.status}`);
 
     const releases = await res.json();
@@ -183,7 +187,7 @@ app.post("/remove-repo", async (req, res) => {
   cachedData = cachedData.filter((r) => r.repo !== repo);
   if (refreshReleases.lastErrors?.length) {
     refreshReleases.lastErrors = refreshReleases.lastErrors.filter(
-      (err) => !err.startsWith(repo)
+      (err) => !err.includes(repo)
     );
   }
   await saveConfig();

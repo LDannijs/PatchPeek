@@ -1,4 +1,6 @@
-# 👀 PatchPeek
+<img align="left" width="60" src="./PatchPeek/public/favicon.svg" />
+
+# PatchPeek
 
 PatchPeek fetches the changelog of GitHub releases with the GitHub API, while checking for any potential breaking changes and puts it into a clean interface.
 
@@ -67,11 +69,6 @@ Github token creation can be found here: https://github.com/settings/personal-ac
 npm install
 npm run dev
 ```
-
-## Roadmap
-
-- Search function
-- Create logo?
 
 ## Motivation
 

@@ -63,7 +63,7 @@ body {
 
 .spinner {
   border: 6px solid #f3f3f3;
-  border-top: 6px solid #3498db;
+  border-top: 6px solid #bdd9fd;
   border-radius: 50%;
   width: 48px;
   height: 48px;
@@ -137,6 +137,8 @@ body {
 }
 
 .title {
+  display: flex;
+  gap: 12px;
   font-size: 1.8em;
   margin: 0;
   text-wrap: nowrap;
@@ -251,7 +253,7 @@ summary::-webkit-details-marker {
 .releaseCount {
   width: 7em;
   display: flex;
-  color: #c3ceff;
+  color: #bdd9fd;
   margin-left: auto;
   margin-top: 0;
   margin-bottom: 0;
@@ -366,6 +368,7 @@ h2 {
 }
 
 .repocheck {
+  accent-color: #bdd9fd;
   width: 20px;
   margin: 3px 0;
   height: 20px;
@@ -375,4 +378,9 @@ h2 {
 .repotext {
   margin: 0;
   padding-left: 5px;
+}
+
+.logo {
+  width: 38px;
+  height: 38px;
 }

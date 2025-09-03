@@ -1,4 +1,4 @@
-<img align="left" width="60" src="./PatchPeek/public/favicon.svg" />
+<img align="left" width="60" src="./patchpeek/public/favicon.svg" />
 
 # PatchPeek
 
@@ -62,8 +62,7 @@ Github token creation can be found here: https://github.com/settings/personal-ac
 > This project requires at least `Node 18`
 
 - Clone the repo
-- Open a terminal in the `PatchPeek` folder
-- Then run:
+- In the terminal, run:
 
 ```
 npm install

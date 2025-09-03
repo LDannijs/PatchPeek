@@ -4,13 +4,14 @@ import fs from "fs/promises";
 import pLimit from "p-limit";
 
 const app = express();
-const configPath = path.resolve("./data/config.json");
+const port = 3000;
+const configPath = path.resolve("./patchpeek/data/config.json");
 const limit = pLimit(5);
 
 app.set("view engine", "ejs");
-app.set("views", path.resolve("./views"));
+app.set("views", path.resolve("./patchpeek/views"));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.resolve("./public")));
+app.use(express.static(path.resolve("./patchpeek/public")));
 
 let config = { repos: [], daysWindow: 31, githubToken: "" };
 let cachedData = [];
@@ -222,7 +223,7 @@ app.post("/update-token", async (req, res) => {
   await loadConfig();
   await refreshReleases();
   setInterval(refreshReleases, 60 * 60 * 1000); // 1 hour
-  app.listen(3000, () =>
-    console.log(`Server running at http://localhost:3000\n`)
+  app.listen(port, () =>
+    console.log(`Server running at http://0.0.0.0:${port}\n`)
   );
 })();

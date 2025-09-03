@@ -1,11 +1,10 @@
 {
   "name": "patchpeek",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Quick overview of Github releases changelog using Github API",
-  "main": "server.mjs",
   "scripts": {
-    "start": "node server.mjs",
-    "dev": "cross-env NODE_ENV=development nodemon --ignore data/ server.mjs"
+    "start": "node ./patchpeek/server.js",
+    "dev": "cross-env NODE_ENV=development nodemon --ignore data/ ./patchpeek/server.js"
   },
   "keywords": [],
   "author": "LDannijs",

@@ -5,7 +5,7 @@ import pLimit from "p-limit";
 
 const app = express();
 const port = 3000;
-const configPath = path.resolve("./patchpeek/data/config.json");
+const configPath = path.resolve("./data/config.json");
 const limit = pLimit(5);
 
 app.set("view engine", "ejs");

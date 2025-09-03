@@ -2,16 +2,22 @@
 
 # PatchPeek
 
-PatchPeek fetches the changelog of GitHub releases with the GitHub API, while checking for any potential breaking changes and puts it into a clean interface.
+PatchPeek fetches the changelog of releases on GitHub, while checking for any potential breaking changes and displays it into a clean interface.
+
+---
 
 ![](screenshot.png)
+
+## PSA
+
+This is very much a passion project from someone without a ton of knowledge on this subject that wanted to learn by doing, so mistakes will very likely have been made and will be made. Besides that, this is a small side hobby, so I don't have a ton of time to work on it and fix stuff. I hope you can understand!
 
 ## Features
 
 - Minimalistic interface
-- Minimal usage of API tokens
+- Minimal usage of GitHub API tokens
 - Changelogs with breaking changes are highlighted
-- Add repos by github url or only the author/repo slug
+- Add repos by GitHub URL or only the author/repo slug
 - Change the amount of days to look back for releases
 
 ## IMPORTANT INFO
@@ -71,6 +77,6 @@ npm run dev
 
 ## Motivation
 
-This project came to fruition from me wanting to quickly know if any updates I were to do to my docker containers would break anything. I have used RSS feeds, discord notifications, etc. but they all felt too cumbersome to quickly check.
+This project came to fruition from me wanting to quickly know if any updates I were to do to my docker containers would break anything. I have used RSS feeds, discord notifications, etc. but they all felt too cumbersome to quickly give me the information i need at a glance.
 
-Besides that I wanted to push myself to make a project like this and see how far i could get, alongside learn some stuff from it :) This is very much a passion project from someone without a ton of knowledge so mistakes will very likely have been made.
+Besides that I wanted to push myself to make a project like this and see how far i could get, alongside learn some stuff from it :)

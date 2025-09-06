@@ -167,7 +167,7 @@ app.get("/", async (req, res) => {
 app.get("/debug", (req, res) => res.json(cachedData));
 
 app.post("/add-repo", async (req, res) => {
-  const repoInput = normalizeRepoSlug(req.body.repoSlug);
+  const repoInput = normalizeRepoSlug(req.body.repoSlug.toLowerCase());
 
   if (config.repos.includes(repoInput))
     return renderIndex(res, { errorMessage: ["Repository already added"] });

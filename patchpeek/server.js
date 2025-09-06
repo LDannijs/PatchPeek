@@ -128,7 +128,7 @@ async function refreshReleases(reposToRefresh = config.repos) {
           ];
         } catch (err) {
           console.error(`Failed to refresh ${repo}: ${err.message}`);
-          errors.push(`${err.message}`);
+          errors.push(`Failed to refresh ${repo}: ${err.message}`);
         }
       })
     )
